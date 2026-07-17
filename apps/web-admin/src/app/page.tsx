@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Modal, Input, TextArea, Button } from "@event-platform/ui";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -25,6 +26,16 @@ export default function AdminPage() {
   const [drawSessions, setDrawSessions] = useState<any[]>([]);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // New Event State
+  const [isCreateEventOpen, setIsCreateEventOpen] = useState(false);
+  const [newEvent, setNewEvent] = useState({
+    name: "",
+    description: "",
+    venue: "",
+    startDate: "",
+    endDate: "",
+  });
 
   // Load events
   useEffect(() => {
@@ -105,6 +116,36 @@ export default function AdminPage() {
     const r = await fetch(`${API_URL}/api/registrations?eventId=${selectedEventId}&limit=50`);
     const rd = await r.json();
     if (rd.success) setRegistrations(rd.data);
+  }
+
+  async function handleCreateEvent(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const payload = {
+        ...newEvent,
+        startDate: new Date(newEvent.startDate).toISOString(),
+        endDate: new Date(newEvent.endDate).toISOString(),
+      };
+      const res = await fetch(`${API_URL}/api/events`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setEvents([data.data, ...events]);
+        setIsCreateEventOpen(false);
+        setNewEvent({ name: "", description: "", venue: "", startDate: "", endDate: "" });
+        if (!selectedEventId) setSelectedEventId(data.data.id);
+      } else {
+        alert(`Error: ${data.error}`);
+      }
+    } catch (err) {
+      alert("Failed to create event");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -231,7 +272,7 @@ export default function AdminPage() {
                 <h1 className="admin-header__title">จัดการงาน Event</h1>
                 <p className="admin-header__subtitle">{events.length} งานทั้งหมด</p>
               </div>
-              <button className="btn btn--primary">+ สร้างงานใหม่</button>
+              <Button variant="primary" onClick={() => setIsCreateEventOpen(true)}>+ สร้างงานใหม่</Button>
             </div>
             <div className="grid grid-2 gap-6">
               {events.map((ev) => (
@@ -491,6 +532,57 @@ export default function AdminPage() {
           </div>
         )}
       </main>
+
+      {/* Create Event Modal */}
+      <Modal
+        isOpen={isCreateEventOpen}
+        onClose={() => setIsCreateEventOpen(false)}
+        title="สร้างงาน Event ใหม่"
+        footer={
+          <div style={{ display: "flex", gap: "var(--space-3)", justifyContent: "flex-end" }}>
+            <Button variant="ghost" onClick={() => setIsCreateEventOpen(false)}>ยกเลิก</Button>
+            <Button variant="primary" type="submit" form="create-event-form">บันทึก</Button>
+          </div>
+        }
+      >
+        <form id="create-event-form" onSubmit={handleCreateEvent} style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+          <Input
+            label="ชื่องาน"
+            required
+            value={newEvent.name}
+            onChange={(e) => setNewEvent({ ...newEvent, name: e.target.value })}
+            placeholder="เช่น Townhall 2024"
+          />
+          <TextArea
+            label="รายละเอียด"
+            value={newEvent.description}
+            onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
+            rows={3}
+          />
+          <Input
+            label="สถานที่"
+            value={newEvent.venue}
+            onChange={(e) => setNewEvent({ ...newEvent, venue: e.target.value })}
+            placeholder="เช่น ห้องประชุมใหญ่ A"
+          />
+          <div className="grid grid-2 gap-4">
+            <Input
+              label="วันที่เริ่ม"
+              type="datetime-local"
+              required
+              value={newEvent.startDate}
+              onChange={(e) => setNewEvent({ ...newEvent, startDate: e.target.value })}
+            />
+            <Input
+              label="วันที่สิ้นสุด"
+              type="datetime-local"
+              required
+              value={newEvent.endDate}
+              onChange={(e) => setNewEvent({ ...newEvent, endDate: e.target.value })}
+            />
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }
