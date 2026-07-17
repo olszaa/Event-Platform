@@ -1,0 +1,33 @@
+{
+  "name": "event-platform",
+  "private": true,
+  "packageManager": "pnpm@11.8.0",
+  "scripts": {
+    "dev": "turbo run dev",
+    "dev:api": "turbo run dev --filter=@event-platform/api",
+    "dev:registration": "turbo run dev --filter=@event-platform/web-registration",
+    "dev:checkin": "turbo run dev --filter=@event-platform/web-checkin",
+    "dev:admin": "turbo run dev --filter=@event-platform/web-admin",
+    "dev:luckydraw": "turbo run dev --filter=@event-platform/web-luckydraw",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "type-check": "turbo run type-check",
+    "db:migrate": "prisma migrate dev",
+    "db:push": "prisma db push",
+    "db:seed": "prisma db seed",
+    "db:studio": "prisma studio",
+    "clean": "turbo run clean && rimraf node_modules"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.0",
+    "rimraf": "^6.0.0",
+    "prisma": "^6.10.0"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.10.0"
+  },
+  "prisma": {
+    "schema": "prisma/schema.prisma",
+    "seed": "tsx prisma/seed.ts"
+  }
+}

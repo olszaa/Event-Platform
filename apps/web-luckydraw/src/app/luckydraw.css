@@ -1,0 +1,181 @@
+/* Lucky Draw — Premium Full-Screen Styles */
+
+.draw-stage {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-primary);
+  overflow: hidden;
+}
+
+/* Animated background */
+.draw-stage::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 30% 40%, rgba(99, 102, 241, 0.12) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 60%, rgba(6, 182, 212, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 90%, rgba(245, 158, 11, 0.06) 0%, transparent 40%);
+  animation: bg-breathe 8s ease-in-out infinite;
+}
+
+@keyframes bg-breathe {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.05); }
+}
+
+/* Prize display */
+.draw-prize {
+  text-align: center;
+  position: relative;
+  z-index: 1;
+  margin-bottom: var(--space-8);
+}
+
+.draw-prize__icon {
+  font-size: 5rem;
+  margin-bottom: var(--space-4);
+  animation: bounce 2s infinite;
+}
+
+.draw-prize__name {
+  font-size: var(--text-4xl);
+  font-weight: 900;
+  background: linear-gradient(135deg, var(--color-accent-light) 0%, var(--color-primary-light) 50%, var(--color-secondary-light) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: var(--space-2);
+}
+
+/* Slot machine effect */
+.draw-slot {
+  position: relative;
+  width: 600px;
+  height: 120px;
+  overflow: hidden;
+  border-radius: var(--radius-2xl);
+  background: var(--bg-glass);
+  border: 2px solid var(--border-primary);
+  box-shadow: var(--shadow-glow-lg);
+  z-index: 1;
+}
+
+.draw-slot__inner {
+  position: absolute;
+  width: 100%;
+  transition: transform 0.1s linear;
+}
+
+.draw-slot__item {
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-3xl);
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+/* Winner reveal */
+.draw-winner {
+  text-align: center;
+  position: relative;
+  z-index: 1;
+  animation: slideUp 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.draw-winner__name {
+  font-size: var(--text-6xl);
+  font-weight: 900;
+  color: var(--color-accent-light);
+  margin-bottom: var(--space-2);
+  text-shadow: 0 0 40px rgba(245, 158, 11, 0.5);
+}
+
+.draw-winner__dept {
+  font-size: var(--text-2xl);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-6);
+}
+
+.draw-winner__prize {
+  font-size: var(--text-xl);
+  color: var(--color-primary-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+/* Confetti */
+.confetti-container {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 100;
+  overflow: hidden;
+}
+
+/* Controls panel */
+.draw-controls {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: var(--space-4) var(--space-6);
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-subtle);
+  backdrop-filter: blur(20px);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.draw-controls--hidden {
+  transform: translateY(100%);
+  transition: transform 0.3s;
+}
+
+/* Winners sidebar */
+.draw-sidebar {
+  position: fixed;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 320px;
+  background: var(--bg-secondary);
+  border-left: 1px solid var(--border-subtle);
+  padding: var(--space-6);
+  overflow-y: auto;
+  z-index: 10;
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+}
+
+.draw-sidebar--open {
+  transform: translateX(0);
+}
+
+/* Idle state */
+.draw-idle {
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
+.draw-idle__title {
+  font-size: var(--text-6xl);
+  font-weight: 900;
+  background: linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-accent-light) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: var(--space-4);
+  animation: glow-pulse 3s infinite;
+}
