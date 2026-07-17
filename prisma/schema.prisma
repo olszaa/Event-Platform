@@ -1,0 +1,264 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ===================================
+// Event
+// ===================================
+model Event {
+  id          String   @id @default(cuid())
+  name        String
+  description String?  @db.Text
+  venue       String?
+  startDate   DateTime
+  endDate     DateTime
+  status      EventStatus @default(DRAFT)
+  settings    Json?    @default("{}")
+  coverImage  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  registrations Registration[]
+  checkinPoints CheckinPoint[]
+  prizes        Prize[]
+  drawSessions  DrawSession[]
+
+  @@map("events")
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  ACTIVE
+  CLOSED
+  ARCHIVED
+}
+
+// ===================================
+// Registration
+// ===================================
+model Registration {
+  id           String             @id @default(cuid())
+  eventId      String
+  fullName     String
+  email        String?
+  phone        String?
+  company      String?
+  department   String?
+  employeeType String?
+  groupName    String?
+  groupId      String?
+  qrCode       String             @unique
+  qrDataUrl    String?            @db.Text
+  status       RegistrationStatus @default(REGISTERED)
+  metadata     Json?              @default("{}")
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  event        Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  groupMembers GroupMember[]
+  checkins     Checkin[]
+  drawWinners  DrawWinner[]
+
+  @@index([eventId])
+  @@index([qrCode])
+  @@index([groupId])
+  @@map("registrations")
+}
+
+enum RegistrationStatus {
+  REGISTERED
+  CONFIRMED
+  CHECKED_IN
+  CANCELLED
+}
+
+// ===================================
+// Group Member (for group registration)
+// ===================================
+model GroupMember {
+  id             String   @id @default(cuid())
+  registrationId String
+  fullName       String
+  email          String?
+  phone          String?
+  role           String?  @default("member")
+  createdAt      DateTime @default(now())
+
+  registration Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+
+  @@index([registrationId])
+  @@map("group_members")
+}
+
+// ===================================
+// Checkin Point (multi-checkpoint)
+// ===================================
+model CheckinPoint {
+  id       String  @id @default(cuid())
+  eventId  String
+  name     String
+  location String?
+  isActive Boolean @default(true)
+  sortOrder Int    @default(0)
+  createdAt DateTime @default(now())
+
+  event    Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  checkins Checkin[]
+
+  @@index([eventId])
+  @@map("checkin_points")
+}
+
+// ===================================
+// Checkin Record
+// ===================================
+model Checkin {
+  id             String   @id @default(cuid())
+  registrationId String
+  checkinPointId String
+  checkinTime    DateTime @default(now())
+  method         CheckinMethod @default(QR_SCAN)
+  checkedBy      String?
+
+  registration  Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  checkinPoint  CheckinPoint @relation(fields: [checkinPointId], references: [id], onDelete: Cascade)
+
+  @@unique([registrationId, checkinPointId])
+  @@index([registrationId])
+  @@index([checkinPointId])
+  @@map("checkins")
+}
+
+enum CheckinMethod {
+  QR_SCAN
+  MANUAL
+  SEARCH
+}
+
+// ===================================
+// Prize
+// ===================================
+model Prize {
+  id          String   @id @default(cuid())
+  eventId     String
+  name        String
+  description String?  @db.Text
+  image       String?
+  quantity    Int      @default(1)
+  awarded     Int      @default(0)
+  sortOrder   Int      @default(0)
+  conditions  Json?    @default("{}")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  event        Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  drawSessions DrawSession[]
+  drawWinners  DrawWinner[]
+
+  @@index([eventId])
+  @@map("prizes")
+}
+
+// ===================================
+// Draw Session
+// ===================================
+model DrawSession {
+  id          String          @id @default(cuid())
+  eventId     String
+  prizeId     String
+  status      DrawSessionStatus @default(PENDING)
+  drawCount   Int             @default(1)
+  startedAt   DateTime?
+  endedAt     DateTime?
+  performedBy String?
+  createdAt   DateTime        @default(now())
+
+  event       Event           @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  prize       Prize           @relation(fields: [prizeId], references: [id], onDelete: Cascade)
+  winners     DrawWinner[]
+  history     DrawHistory[]
+
+  @@index([eventId])
+  @@index([prizeId])
+  @@map("draw_sessions")
+}
+
+enum DrawSessionStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+// ===================================
+// Draw Winner
+// ===================================
+model DrawWinner {
+  id             String          @id @default(cuid())
+  drawSessionId  String
+  registrationId String
+  prizeId        String
+  status         DrawWinnerStatus @default(PENDING)
+  drawNumber     Int             @default(1)
+  drawnAt        DateTime        @default(now())
+
+  drawSession  DrawSession  @relation(fields: [drawSessionId], references: [id], onDelete: Cascade)
+  registration Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  prize        Prize        @relation(fields: [prizeId], references: [id], onDelete: Cascade)
+
+  @@index([drawSessionId])
+  @@index([registrationId])
+  @@index([prizeId])
+  @@map("draw_winners")
+}
+
+enum DrawWinnerStatus {
+  PENDING
+  ACCEPTED
+  REDRAWN
+  CANCELLED
+}
+
+// ===================================
+// Draw History (Audit for every draw action)
+// ===================================
+model DrawHistory {
+  id            String   @id @default(cuid())
+  drawSessionId String
+  action        String
+  data          Json?    @default("{}")
+  performedBy   String?
+  timestamp     DateTime @default(now())
+
+  drawSession DrawSession @relation(fields: [drawSessionId], references: [id], onDelete: Cascade)
+
+  @@index([drawSessionId])
+  @@map("draw_history")
+}
+
+// ===================================
+// Audit Log (System-wide)
+// ===================================
+model AuditLog {
+  id          String   @id @default(cuid())
+  entityType  String
+  entityId    String
+  action      String
+  oldData     Json?
+  newData     Json?
+  performedBy String?
+  ipAddress   String?
+  userAgent   String?
+  timestamp   DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([timestamp])
+  @@map("audit_logs")
+}

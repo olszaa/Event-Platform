@@ -1,0 +1,28 @@
+{
+  "extends": "../../packages/config/tsconfig.next.json",
+  "compilerOptions": {
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ],
+      "@event-platform/ui": [
+        "../../packages/ui/src"
+      ],
+      "@event-platform/types": [
+        "../../packages/types/src"
+      ],
+      "@event-platform/utils": [
+        "../../packages/utils/src"
+      ]
+    }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "next-env.d.ts",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}
