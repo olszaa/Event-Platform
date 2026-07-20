@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type { Event } from "@event-platform/types";
+import type { Event as EventType } from "@event-platform/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
 export default function HomePage() {
-  const [events, setEvents] = useState<Event[]>([]);
+  const [events, setEvents] = useState<EventType[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

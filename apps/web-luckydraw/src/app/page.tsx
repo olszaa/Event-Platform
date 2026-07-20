@@ -33,6 +33,10 @@ const CONFETTI_COLORS = [
 ];
 
 export default function LuckyDrawPage() {
+  const [token, setToken] = useState<string | null>(null);
+  const [isCheckingToken, setIsCheckingToken] = useState(true);
+  const [loginForm, setLoginForm] = useState({ username: "", password: "", error: "", loading: false });
+
   const [eventId, setEventId] = useState("");
   const [events, setEvents] = useState<Event[]>([]);
   const [prizes, setPrizes] = useState<Prize[]>([]);
@@ -50,9 +54,43 @@ export default function LuckyDrawPage() {
   const socketRef = useRef<Socket | null>(null);
   const spinTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  useEffect(() => {
+    const savedToken = localStorage.getItem("admin_token");
+    if (savedToken) setToken(savedToken);
+    setIsCheckingToken(false);
+  }, []);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginForm((prev) => ({ ...prev, error: "", loading: true }));
+    try {
+      const res = await fetch(`${API_URL}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: loginForm.username, password: loginForm.password }),
+      });
+      const data = await res.json();
+      if (data.success && data.data?.token) {
+        setToken(data.data.token);
+        localStorage.setItem("admin_token", data.data.token);
+      } else {
+        setLoginForm((prev) => ({ ...prev, error: data.message || "Invalid credentials" }));
+      }
+    } catch (err) {
+      setLoginForm((prev) => ({ ...prev, error: "Network error" }));
+    } finally {
+      setLoginForm((prev) => ({ ...prev, loading: false }));
+    }
+  };
+
+  const getAuthHeaders = () => {
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
+
   // Load events
   useEffect(() => {
-    fetch(`${API_URL}/api/events`)
+    if (!token) return;
+    fetch(`${API_URL}/api/events`, { headers: getAuthHeaders() })
       .then((r) => r.json())
       .then((res) => {
         if (res.success) {
@@ -66,12 +104,12 @@ export default function LuckyDrawPage() {
   useEffect(() => {
     if (!eventId) return;
 
-    fetch(`${API_URL}/api/prizes?eventId=${eventId}`)
+    fetch(`${API_URL}/api/prizes?eventId=${eventId}`, { headers: getAuthHeaders() })
       .then((r) => r.json())
       .then((res) => { if (res.success) setPrizes(res.data); });
 
     // Load existing winners
-    fetch(`${API_URL}/api/draws/winners/all?eventId=${eventId}`)
+    fetch(`${API_URL}/api/draws/winners/all?eventId=${eventId}`, { headers: getAuthHeaders() })
       .then((r) => r.json())
       .then((res) => {
         if (res.success) {
@@ -158,9 +196,9 @@ export default function LuckyDrawPage() {
     setDrawState("selecting");
 
     // Create draw session
-    const res = await fetch(`${API_URL}/api/draws`, {
+    const res = await fetch(`${API_URL}/api/draws/start`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
       body: JSON.stringify({ eventId, prizeId: selectedPrize.id, drawCount: 1 }),
     });
     const data = await res.json();
@@ -232,6 +270,54 @@ export default function LuckyDrawPage() {
   const selectedEvent = events.find((e) => e.id === eventId);
   const bgUrl = selectedEvent?.settings?.luckyDrawBackground;
   const animType = selectedEvent?.settings?.luckyDrawAnimation || "pulse";
+
+  if (isCheckingToken) {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh", backgroundColor: "var(--background)" }}>
+        <h2 style={{ color: "white" }}>Loading...</h2>
+      </div>
+    );
+  }
+
+  if (!token) {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh", backgroundColor: "var(--background)" }}>
+        <div style={{ backgroundColor: "var(--surface)", padding: "var(--space-8)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-md)", width: "100%", maxWidth: "400px" }}>
+          <h2 style={{ textAlign: "center", marginBottom: "var(--space-6)" }}>LuckyDraw Login</h2>
+          <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+            <div>
+              <label style={{ display: "block", marginBottom: "var(--space-2)" }}>Username</label>
+              <input 
+                type="text" 
+                value={loginForm.username} 
+                onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })} 
+                required 
+                style={{ width: "100%", padding: "0.5rem", borderRadius: "4px", border: "1px solid #ccc", backgroundColor: "white", color: "black" }}
+              />
+            </div>
+            <div>
+              <label style={{ display: "block", marginBottom: "var(--space-2)" }}>Password</label>
+              <input 
+                type="password" 
+                value={loginForm.password} 
+                onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })} 
+                required 
+                style={{ width: "100%", padding: "0.5rem", borderRadius: "4px", border: "1px solid #ccc", backgroundColor: "white", color: "black" }}
+              />
+            </div>
+            {loginForm.error && <div style={{ color: "var(--color-danger)", fontSize: "0.875rem" }}>{loginForm.error}</div>}
+            <button 
+              type="submit" 
+              disabled={loginForm.loading} 
+              style={{ marginTop: "var(--space-4)", padding: "0.75rem", backgroundColor: "var(--color-primary)", color: "white", border: "none", borderRadius: "4px", cursor: "pointer" }}
+            >
+              {loginForm.loading ? "Logging in..." : "Login"}
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{

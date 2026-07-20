@@ -5,7 +5,7 @@ import { Modal, Input, TextArea, Button } from "@event-platform/ui";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
-type Tab = "dashboard" | "events" | "registrations" | "prizes" | "draws" | "audit";
+type Tab = "dashboard" | "events" | "registrations" | "prizes" | "draws" | "audit" | "users";
 
 const NAV_ITEMS: { key: Tab; icon: string; label: string }[] = [
   { key: "dashboard", icon: "📊", label: "Dashboard" },
@@ -14,9 +14,16 @@ const NAV_ITEMS: { key: Tab; icon: string; label: string }[] = [
   { key: "prizes", icon: "🎁", label: "รางวัล" },
   { key: "draws", icon: "🎰", label: "ผลจับรางวัล" },
   { key: "audit", icon: "📜", label: "Audit Log" },
+  { key: "users", icon: "👥", label: "จัดการผู้ใช้" },
 ];
 
 export default function AdminPage() {
+  const [token, setToken] = useState<string | null>(null);
+  const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isCheckingToken, setIsCheckingToken] = useState(true);
+  const [loginForm, setLoginForm] = useState({ username: "", password: "", error: "", loading: false });
+
   const [activeTab, setActiveTab] = useState<Tab>("dashboard");
   const [events, setEvents] = useState<any[]>([]);
   const [selectedEventId, setSelectedEventId] = useState("");
@@ -25,7 +32,13 @@ export default function AdminPage() {
   const [prizes, setPrizes] = useState<any[]>([]);
   const [drawSessions, setDrawSessions] = useState<any[]>([]);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const [adminUsers, setAdminUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // User Management State
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [userForm, setUserForm] = useState({ username: "", password: "", role: "ADMIN" });
 
   // New Event State
   const [isCreateEventOpen, setIsCreateEventOpen] = useState(false);
@@ -44,9 +57,53 @@ export default function AdminPage() {
     allowGroupRegistration: false,
   });
 
+  useEffect(() => {
+    const savedToken = localStorage.getItem("admin_token");
+    const savedRole = localStorage.getItem("admin_role");
+    const savedId = localStorage.getItem("admin_id");
+    if (savedToken) {
+      setToken(savedToken);
+      setCurrentUserRole(savedRole);
+      setCurrentUserId(savedId);
+    }
+    setIsCheckingToken(false);
+  }, []);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginForm((prev) => ({ ...prev, error: "", loading: true }));
+    try {
+      const res = await fetch(`${API_URL}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: loginForm.username, password: loginForm.password }),
+      });
+      const data = await res.json();
+      if (data.success && data.data?.token) {
+        setToken(data.data.token);
+        setCurrentUserRole(data.data.user?.role || "ADMIN");
+        setCurrentUserId(data.data.user?.id || null);
+        localStorage.setItem("admin_token", data.data.token);
+        localStorage.setItem("admin_role", data.data.user?.role || "ADMIN");
+        if (data.data.user?.id) localStorage.setItem("admin_id", data.data.user.id);
+      } else {
+        setLoginForm((prev) => ({ ...prev, error: data.message || "Invalid credentials" }));
+      }
+    } catch (err) {
+      setLoginForm((prev) => ({ ...prev, error: "Network error" }));
+    } finally {
+      setLoginForm((prev) => ({ ...prev, loading: false }));
+    }
+  };
+
+  const getAuthHeaders = () => {
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
+
   // Load events
   useEffect(() => {
-    fetch(`${API_URL}/api/events`)
+    if (!token) return;
+    fetch(`${API_URL}/api/events`, { headers: getAuthHeaders() })
       .then((r) => r.json())
       .then((res) => {
         if (res.success) {
@@ -54,10 +111,11 @@ export default function AdminPage() {
           if (res.data.length > 0 && !selectedEventId) setSelectedEventId(res.data[0].id);
         }
       });
-  }, []);
+  }, [token]);
 
   // Load data when event or tab changes
   useEffect(() => {
+    if (!token) return;
     if (!selectedEventId) return;
     setLoading(true);
 
@@ -65,7 +123,7 @@ export default function AdminPage() {
 
     if (activeTab === "dashboard") {
       loads.push(
-        fetch(`${API_URL}/api/events/${selectedEventId}/stats`)
+        fetch(`${API_URL}/api/events/${selectedEventId}/stats`, { headers: getAuthHeaders() })
           .then((r) => r.json())
           .then((res) => { if (res.success) setStats(res.data); })
       );
@@ -73,7 +131,7 @@ export default function AdminPage() {
 
     if (activeTab === "registrations" || activeTab === "dashboard") {
       loads.push(
-        fetch(`${API_URL}/api/registrations?eventId=${selectedEventId}&limit=50`)
+        fetch(`${API_URL}/api/registrations?eventId=${selectedEventId}&limit=50`, { headers: getAuthHeaders() })
           .then((r) => r.json())
           .then((res) => { if (res.success) setRegistrations(res.data); })
       );
@@ -81,7 +139,7 @@ export default function AdminPage() {
 
     if (activeTab === "prizes" || activeTab === "dashboard") {
       loads.push(
-        fetch(`${API_URL}/api/prizes?eventId=${selectedEventId}`)
+        fetch(`${API_URL}/api/prizes?eventId=${selectedEventId}`, { headers: getAuthHeaders() })
           .then((r) => r.json())
           .then((res) => { if (res.success) setPrizes(res.data); })
       );
@@ -89,7 +147,7 @@ export default function AdminPage() {
 
     if (activeTab === "draws") {
       loads.push(
-        fetch(`${API_URL}/api/draws?eventId=${selectedEventId}`)
+        fetch(`${API_URL}/api/draws?eventId=${selectedEventId}`, { headers: getAuthHeaders() })
           .then((r) => r.json())
           .then((res) => { if (res.success) setDrawSessions(res.data); })
       );
@@ -97,9 +155,17 @@ export default function AdminPage() {
 
     if (activeTab === "audit") {
       loads.push(
-        fetch(`${API_URL}/api/audit?limit=100`)
+        fetch(`${API_URL}/api/audit?limit=100`, { headers: getAuthHeaders() })
           .then((r) => r.json())
           .then((res) => { if (res.success) setAuditLogs(res.data); })
+      );
+    }
+
+    if (activeTab === "users") {
+      loads.push(
+        fetch(`${API_URL}/api/users`, { headers: getAuthHeaders() })
+          .then((r) => r.json())
+          .then((res) => { if (res.success) setAdminUsers(res.data); })
       );
     }
 
@@ -183,6 +249,38 @@ export default function AdminPage() {
     } catch (err) {
       alert("Failed to update status");
     }
+  }
+
+  if (isCheckingToken) {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh", backgroundColor: "var(--background)" }}>
+        <h2 style={{ color: "var(--text)" }}>Loading...</h2>
+      </div>
+    );
+  }
+
+  if (!token) {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh", backgroundColor: "var(--background)" }}>
+        <div style={{ backgroundColor: "var(--surface)", padding: "var(--space-8)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-md)", width: "100%", maxWidth: "400px" }}>
+          <h2 style={{ textAlign: "center", marginBottom: "var(--space-6)" }}>Admin Login</h2>
+          <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+            <div>
+              <label style={{ display: "block", marginBottom: "var(--space-2)" }}>Username</label>
+              <Input value={loginForm.username} onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })} required />
+            </div>
+            <div>
+              <label style={{ display: "block", marginBottom: "var(--space-2)" }}>Password</label>
+              <Input type="password" value={loginForm.password} onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })} required />
+            </div>
+            {loginForm.error && <div style={{ color: "var(--color-danger)", fontSize: "0.875rem" }}>{loginForm.error}</div>}
+            <Button type="submit" disabled={loginForm.loading} style={{ marginTop: "var(--space-4)" }}>
+              {loginForm.loading ? "Logging in..." : "Login"}
+            </Button>
+          </form>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -572,6 +670,91 @@ export default function AdminPage() {
           </div>
         )}
 
+        {/* Users Management */}
+        {activeTab === "users" && (
+          <div>
+            <div className="admin-header">
+              <div>
+                <h1 className="admin-header__title">จัดการผู้ใช้ (SuperAdmin)</h1>
+                <p className="admin-header__subtitle">จัดการบัญชีผู้ดูแลระบบ</p>
+              </div>
+              {currentUserRole === "SUPERADMIN" && (
+                <Button 
+                  variant="primary" 
+                  onClick={() => {
+                    setEditingUserId(null);
+                    setUserForm({ username: "", password: "", role: "ADMIN" });
+                    setIsUserModalOpen(true);
+                  }}
+                >
+                  + เพิ่มผู้ใช้ใหม่
+                </Button>
+              )}
+            </div>
+            <div className="table-container">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Username</th>
+                    <th>Role</th>
+                    <th>วันที่สร้าง</th>
+                    <th>การกระทำ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {adminUsers.map((user) => (
+                    <tr key={user.id}>
+                      <td>{user.username}</td>
+                      <td><span className="badge badge--primary">{user.role}</span></td>
+                      <td style={{ fontSize: "var(--text-xs)", whiteSpace: "nowrap" }}>
+                        {new Date(user.createdAt).toLocaleDateString("th-TH")}
+                      </td>
+                      <td>
+                        <div className="flex gap-2">
+                          {(currentUserRole === "SUPERADMIN" || currentUserId === user.id) && (
+                            <button 
+                              className="btn btn--outline" 
+                              style={{ padding: "0.25rem 0.5rem", fontSize: "0.75rem" }}
+                              onClick={() => {
+                                setEditingUserId(user.id);
+                                setUserForm({ username: user.username, password: "", role: user.role });
+                                setIsUserModalOpen(true);
+                              }}
+                            >
+                              แก้ไข
+                            </button>
+                          )}
+                          {currentUserRole === "SUPERADMIN" && (
+                            <button 
+                              className="btn btn--danger" 
+                              style={{ padding: "0.25rem 0.5rem", fontSize: "0.75rem" }}
+                              onClick={async () => {
+                                if (confirm("ยืนยันการลบผู้ใช้นี้?")) {
+                                  const res = await fetch(`${API_URL}/api/users/${user.id}`, {
+                                    method: "DELETE",
+                                    headers: getAuthHeaders(),
+                                  });
+                                  if (res.ok) {
+                                    setAdminUsers(adminUsers.filter((u) => u.id !== user.id));
+                                  } else {
+                                    alert("Failed to delete user");
+                                  }
+                                }
+                              }}
+                            >
+                              ลบ
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
         {loading && (
           <div className="flex-center" style={{ padding: "var(--space-8)" }}>
             <span className="spinner spinner--lg" />
@@ -706,6 +889,73 @@ export default function AdminPage() {
                 placeholder="https://..."
               />
             </div>
+          </div>
+        </form>
+      </Modal>
+
+      {/* User Management Modal */}
+      <Modal
+        isOpen={isUserModalOpen}
+        onClose={() => setIsUserModalOpen(false)}
+        title={editingUserId ? "แก้ไขผู้ใช้" : "เพิ่มผู้ใช้ใหม่"}
+        footer={
+          <div style={{ display: "flex", gap: "var(--space-3)", justifyContent: "flex-end" }}>
+            <Button variant="ghost" onClick={() => setIsUserModalOpen(false)}>ยกเลิก</Button>
+            <Button variant="primary" type="submit" form="user-form">บันทึก</Button>
+          </div>
+        }
+      >
+        <form 
+          id="user-form" 
+          onSubmit={async (e) => {
+            e.preventDefault();
+            const method = editingUserId ? "PUT" : "POST";
+            const url = editingUserId ? `${API_URL}/api/users/${editingUserId}` : `${API_URL}/api/users`;
+            
+            const res = await fetch(url, {
+              method,
+              headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+              body: JSON.stringify(userForm),
+            });
+
+            if (res.ok) {
+              setIsUserModalOpen(false);
+              // Refetch users
+              const usersRes = await fetch(`${API_URL}/api/users`, { headers: getAuthHeaders() });
+              const data = await usersRes.json();
+              if (data.success) setAdminUsers(data.data);
+            } else {
+              const data = await res.json();
+              alert(data.message || "Failed to save user");
+            }
+          }} 
+          style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}
+        >
+          <Input
+            label="Username"
+            required
+            value={userForm.username}
+            onChange={(e) => setUserForm({ ...userForm, username: e.target.value })}
+            placeholder="admin123"
+          />
+          <Input
+            label={editingUserId ? "Password (ปล่อยว่างถ้าไม่ต้องการเปลี่ยน)" : "Password"}
+            type="password"
+            required={!editingUserId}
+            value={userForm.password}
+            onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
+          />
+          <div className="form-group">
+            <label className="form-label">Role</label>
+            <select
+              className="form-input"
+              value={userForm.role}
+              onChange={(e) => setUserForm({ ...userForm, role: e.target.value })}
+              disabled={currentUserRole !== "SUPERADMIN"}
+            >
+              <option value="ADMIN">ADMIN</option>
+              <option value="SUPERADMIN">SUPERADMIN</option>
+            </select>
           </div>
         </form>
       </Modal>

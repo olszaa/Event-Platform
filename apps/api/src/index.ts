@@ -13,12 +13,18 @@ import { prizesRouter } from "./routes/prizes";
 import { drawsRouter } from "./routes/draws";
 import { auditRouter } from "./routes/audit";
 import { notificationsRouter } from "./routes/notifications";
+import { authRouter } from "./routes/auth";
+import { usersRouter } from "./routes/users";
 import { errorHandler } from "./middleware/errorHandler";
+import { verifyToken } from "./middleware/auth";
 import { setupSocketHandlers } from "./socket";
 import type { ServerToClientEvents, ClientToServerEvents } from "@event-platform/types";
+import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
 const app = express();
 const server = createServer(app);
+const prisma = new PrismaClient();
 
 // Socket.io setup with typed events
 const io = new Server<ClientToServerEvents, ServerToClientEvents>(server, {
@@ -51,18 +57,43 @@ app.use(express.urlencoded({ extended: true }));
 app.set("io", io);
 
 // Routes
+app.use("/api/auth", authRouter);
+app.use("/api/users", verifyToken, usersRouter);
 app.use("/api/events", eventsRouter);
 app.use("/api/registrations", registrationsRouter);
 app.use("/api/checkin", checkinsRouter);
 app.use("/api/prizes", prizesRouter);
 app.use("/api/draws", drawsRouter);
-app.use("/api/audit", auditRouter);
+app.use("/api/audit", verifyToken, auditRouter);
 app.use("/api/notifications", notificationsRouter);
 
 // Health check
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
+
+async function seedSuperAdmin() {
+  try {
+    const username = process.env.SUPERADMIN_USERNAME || "admin";
+    const password = process.env.SUPERADMIN_PASSWORD || "password123";
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await prisma.user.upsert({
+      where: { username },
+      update: { role: "SUPERADMIN" },
+      create: {
+        username,
+        password: hashedPassword,
+        role: "SUPERADMIN",
+      },
+    });
+    console.log(`✅ SuperAdmin user '${username}' seeded/verified automatically.`);
+  } catch (error) {
+    console.error("Failed to seed SuperAdmin:", error);
+  }
+}
+
+seedSuperAdmin();
 
 // Error handler
 app.use(errorHandler);

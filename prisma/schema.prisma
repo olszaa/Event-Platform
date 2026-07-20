@@ -262,3 +262,17 @@ model AuditLog {
   @@index([timestamp])
   @@map("audit_logs")
 }
+
+// ===================================
+// User (System Admin)
+// ===================================
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  password  String
+  role      String   @default("ADMIN")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
