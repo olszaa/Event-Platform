@@ -42,6 +42,7 @@ export default function AdminPage() {
 
   // New Event State
   const [isCreateEventOpen, setIsCreateEventOpen] = useState(false);
+  const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [newEvent, setNewEvent] = useState({
     name: "",
     description: "",
@@ -56,6 +57,46 @@ export default function AdminPage() {
     coverImage: "",
     allowGroupRegistration: false,
   });
+
+  function openCreateEvent() {
+    setEditingEventId(null);
+    setNewEvent({
+      name: "",
+      description: "",
+      venue: "",
+      startDate: "",
+      endDate: "",
+      themeColor: "#6366f1",
+      registerBackground: "",
+      checkinBackground: "",
+      luckyDrawBackground: "",
+      luckyDrawAnimation: "pulse",
+      coverImage: "",
+      allowGroupRegistration: false,
+    });
+    setIsCreateEventOpen(true);
+  }
+
+  function openEditEvent(ev: any) {
+    setEditingEventId(ev.id);
+    const startIso = ev.startDate ? new Date(ev.startDate).toISOString().slice(0, 16) : "";
+    const endIso = ev.endDate ? new Date(ev.endDate).toISOString().slice(0, 16) : "";
+    setNewEvent({
+      name: ev.name || "",
+      description: ev.description || "",
+      venue: ev.venue || "",
+      startDate: startIso,
+      endDate: endIso,
+      themeColor: ev.settings?.themeColor || "#6366f1",
+      registerBackground: ev.settings?.registerBackground || "",
+      checkinBackground: ev.settings?.checkinBackground || "",
+      luckyDrawBackground: ev.settings?.luckyDrawBackground || "",
+      luckyDrawAnimation: ev.settings?.luckyDrawAnimation || "pulse",
+      coverImage: ev.coverImage || "",
+      allowGroupRegistration: ev.settings?.allowGroupRegistration || false,
+    });
+    setIsCreateEventOpen(true);
+  }
 
   useEffect(() => {
     const savedToken = localStorage.getItem("admin_token");
@@ -202,7 +243,6 @@ export default function AdminPage() {
         startDate: new Date(newEvent.startDate).toISOString(),
         endDate: new Date(newEvent.endDate).toISOString(),
         coverImage: newEvent.coverImage,
-        status: "DRAFT",
         settings: {
           themeColor: newEvent.themeColor,
           registerBackground: newEvent.registerBackground,
@@ -212,22 +252,37 @@ export default function AdminPage() {
           allowGroupRegistration: newEvent.allowGroupRegistration,
         }
       };
-      const res = await fetch(`${API_URL}/api/events`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setEvents([data.data, ...events]);
-        setIsCreateEventOpen(false);
-        setNewEvent({ name: "", description: "", venue: "", startDate: "", endDate: "", themeColor: "#6366f1", registerBackground: "", checkinBackground: "", luckyDrawBackground: "", coverImage: "", allowGroupRegistration: false, luckyDrawAnimation: "pulse" });
-        if (!selectedEventId) setSelectedEventId(data.data.id);
+
+      if (editingEventId) {
+        const res = await fetch(`${API_URL}/api/events/${editingEventId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (data.success) {
+          setEvents(events.map((ev) => (ev.id === editingEventId ? data.data : ev)));
+          setIsCreateEventOpen(false);
+        } else {
+          alert(`Error: ${data.error}`);
+        }
       } else {
-        alert(`Error: ${data.error}`);
+        const res = await fetch(`${API_URL}/api/events`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...payload, status: "DRAFT" }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          setEvents([data.data, ...events]);
+          setIsCreateEventOpen(false);
+          if (!selectedEventId) setSelectedEventId(data.data.id);
+        } else {
+          alert(`Error: ${data.error}`);
+        }
       }
     } catch (err) {
-      alert("Failed to create event");
+      alert("Failed to save event");
     } finally {
       setLoading(false);
     }
@@ -407,25 +462,34 @@ export default function AdminPage() {
                 <h1 className="admin-header__title">จัดการงาน Event</h1>
                 <p className="admin-header__subtitle">{events.length} งานทั้งหมด</p>
               </div>
-              <Button variant="primary" onClick={() => setIsCreateEventOpen(true)}>+ สร้างงานใหม่</Button>
+              <Button variant="primary" onClick={openCreateEvent}>+ สร้างงานใหม่</Button>
             </div>
             <div className="grid grid-2 gap-6">
               {events.map((ev) => (
                 <div key={ev.id} className="glass-card">
                   <div className="flex-between" style={{ marginBottom: "var(--space-3)" }}>
                     <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 700 }}>{ev.name}</h3>
-                    <select
-                      className={`badge badge--${ev.status === "ACTIVE" ? "success" : ev.status === "PUBLISHED" ? "primary" : "neutral"}`}
-                      style={{ border: "none", outline: "none", cursor: "pointer", fontFamily: "inherit" }}
-                      value={ev.status}
-                      onChange={(e) => updateEventStatus(ev.id, e.target.value)}
-                    >
-                      <option value="DRAFT">DRAFT</option>
-                      <option value="PUBLISHED">PUBLISHED</option>
-                      <option value="ACTIVE">ACTIVE</option>
-                      <option value="CLOSED">CLOSED</option>
-                      <option value="ARCHIVED">ARCHIVED</option>
-                    </select>
+                    <div className="flex gap-2 items-center">
+                      <button
+                        className="btn btn--outline"
+                        style={{ padding: "0.25rem 0.5rem", fontSize: "0.75rem" }}
+                        onClick={() => openEditEvent(ev)}
+                      >
+                        ✏️ แก้ไข
+                      </button>
+                      <select
+                        className={`badge badge--${ev.status === "ACTIVE" ? "success" : ev.status === "PUBLISHED" ? "primary" : "neutral"}`}
+                        style={{ border: "none", outline: "none", cursor: "pointer", fontFamily: "inherit" }}
+                        value={ev.status}
+                        onChange={(e) => updateEventStatus(ev.id, e.target.value)}
+                      >
+                        <option value="DRAFT">DRAFT</option>
+                        <option value="PUBLISHED">PUBLISHED</option>
+                        <option value="ACTIVE">ACTIVE</option>
+                        <option value="CLOSED">CLOSED</option>
+                        <option value="ARCHIVED">ARCHIVED</option>
+                      </select>
+                    </div>
                   </div>
                   <p style={{ fontSize: "var(--text-sm)", color: "var(--text-secondary)", marginBottom: "var(--space-3)" }}>
                     {ev.description || "ไม่มีรายละเอียด"}
@@ -762,11 +826,11 @@ export default function AdminPage() {
         )}
       </main>
 
-      {/* Create Event Modal */}
+      {/* Create / Edit Event Modal */}
       <Modal
         isOpen={isCreateEventOpen}
         onClose={() => setIsCreateEventOpen(false)}
-        title="สร้างงาน Event ใหม่"
+        title={editingEventId ? "แก้ไขงาน Event" : "สร้างงาน Event ใหม่"}
         footer={
           <div style={{ display: "flex", gap: "var(--space-3)", justifyContent: "flex-end" }}>
             <Button variant="ghost" onClick={() => setIsCreateEventOpen(false)}>ยกเลิก</Button>
@@ -923,26 +987,104 @@ export default function AdminPage() {
                   />
                 </div>
               </div>
-              <Input
-                label="ภาพพื้นหลังหน้า Register (URL)"
-                value={newEvent.registerBackground}
-                onChange={(e) => setNewEvent({ ...newEvent, registerBackground: e.target.value })}
-                placeholder="https://..."
-              />
+              <div className="form-group">
+                <label className="form-label" style={{ marginBottom: "var(--space-1)", display: "block" }}>
+                  ภาพพื้นหลังหน้า Register
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="form-input"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onloadend = () => setNewEvent((prev) => ({ ...prev, registerBackground: reader.result as string }));
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                />
+                <input
+                  className="form-input"
+                  type="text"
+                  placeholder="หรือใส่ URL..."
+                  value={newEvent.registerBackground}
+                  onChange={(e) => setNewEvent({ ...newEvent, registerBackground: e.target.value })}
+                  style={{ marginTop: "var(--space-1)" }}
+                />
+                {newEvent.registerBackground && (
+                  <div style={{ position: "relative", marginTop: "4px", display: "inline-block" }}>
+                    <img src={newEvent.registerBackground} alt="Preview" style={{ maxHeight: "60px", borderRadius: "var(--radius-sm)" }} />
+                    <button type="button" onClick={() => setNewEvent({ ...newEvent, registerBackground: "" })} style={{ position: "absolute", top: 0, right: 0, background: "rgba(0,0,0,0.7)", color: "#fff", border: "none", borderRadius: "50%", width: "18px", height: "18px", fontSize: "10px", cursor: "pointer" }}>✕</button>
+                  </div>
+                )}
+              </div>
             </div>
             <div className="grid grid-2 gap-4">
-              <Input
-                label="ภาพพื้นหลังหน้า Check-in (URL)"
-                value={newEvent.checkinBackground}
-                onChange={(e) => setNewEvent({ ...newEvent, checkinBackground: e.target.value })}
-                placeholder="https://..."
-              />
-              <Input
-                label="ภาพพื้นหลังหน้า Lucky Draw (URL)"
-                value={newEvent.luckyDrawBackground}
-                onChange={(e) => setNewEvent({ ...newEvent, luckyDrawBackground: e.target.value })}
-                placeholder="https://..."
-              />
+              <div className="form-group">
+                <label className="form-label" style={{ marginBottom: "var(--space-1)", display: "block" }}>
+                  ภาพพื้นหลังหน้า Check-in
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="form-input"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onloadend = () => setNewEvent((prev) => ({ ...prev, checkinBackground: reader.result as string }));
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                />
+                <input
+                  className="form-input"
+                  type="text"
+                  placeholder="หรือใส่ URL..."
+                  value={newEvent.checkinBackground}
+                  onChange={(e) => setNewEvent({ ...newEvent, checkinBackground: e.target.value })}
+                  style={{ marginTop: "var(--space-1)" }}
+                />
+                {newEvent.checkinBackground && (
+                  <div style={{ position: "relative", marginTop: "4px", display: "inline-block" }}>
+                    <img src={newEvent.checkinBackground} alt="Preview" style={{ maxHeight: "60px", borderRadius: "var(--radius-sm)" }} />
+                    <button type="button" onClick={() => setNewEvent({ ...newEvent, checkinBackground: "" })} style={{ position: "absolute", top: 0, right: 0, background: "rgba(0,0,0,0.7)", color: "#fff", border: "none", borderRadius: "50%", width: "18px", height: "18px", fontSize: "10px", cursor: "pointer" }}>✕</button>
+                  </div>
+                )}
+              </div>
+              <div className="form-group">
+                <label className="form-label" style={{ marginBottom: "var(--space-1)", display: "block" }}>
+                  ภาพพื้นหลังหน้า Lucky Draw
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="form-input"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onloadend = () => setNewEvent((prev) => ({ ...prev, luckyDrawBackground: reader.result as string }));
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                />
+                <input
+                  className="form-input"
+                  type="text"
+                  placeholder="หรือใส่ URL..."
+                  value={newEvent.luckyDrawBackground}
+                  onChange={(e) => setNewEvent({ ...newEvent, luckyDrawBackground: e.target.value })}
+                  style={{ marginTop: "var(--space-1)" }}
+                />
+                {newEvent.luckyDrawBackground && (
+                  <div style={{ position: "relative", marginTop: "4px", display: "inline-block" }}>
+                    <img src={newEvent.luckyDrawBackground} alt="Preview" style={{ maxHeight: "60px", borderRadius: "var(--radius-sm)" }} />
+                    <button type="button" onClick={() => setNewEvent({ ...newEvent, luckyDrawBackground: "" })} style={{ position: "absolute", top: 0, right: 0, background: "rgba(0,0,0,0.7)", color: "#fff", border: "none", borderRadius: "50%", width: "18px", height: "18px", fontSize: "10px", cursor: "pointer" }}>✕</button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </form>
