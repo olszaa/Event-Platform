@@ -83,7 +83,7 @@ export default function LuckyDrawPage() {
     }
   };
 
-  const getAuthHeaders = () => {
+  const getAuthHeaders = (): Record<string, string> => {
     return token ? { Authorization: `Bearer ${token}` } : {};
   };
 
@@ -98,7 +98,7 @@ export default function LuckyDrawPage() {
           if (res.data.length > 0) setEventId(res.data[0].id);
         }
       });
-  }, []);
+  }, [token]);
 
   // Load prizes & connect socket
   useEffect(() => {
