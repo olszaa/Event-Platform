@@ -16,7 +16,13 @@ eventsRouter.get(
     const skip = (Number(page) - 1) * Number(limit);
 
     const where: Record<string, unknown> = {};
-    if (status) where.status = status;
+    if (status) {
+      if (status.includes(",")) {
+        where.status = { in: status.split(",") };
+      } else {
+        where.status = status;
+      }
+    }
     if (search) {
       where.OR = [
         { name: { contains: search as string, mode: "insensitive" } },

@@ -11,6 +11,11 @@ export interface EventSettings {
   requireEmail?: boolean;
   requirePhone?: boolean;
   customFields?: CustomField[];
+  themeColor?: string;
+  registerBackground?: string;
+  checkinBackground?: string;
+  luckyDrawBackground?: string;
+  luckyDrawAnimation?: "slot" | "pulse" | "random";
 }
 
 export interface CustomField {

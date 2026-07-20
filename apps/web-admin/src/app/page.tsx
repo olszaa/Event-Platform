@@ -35,6 +35,13 @@ export default function AdminPage() {
     venue: "",
     startDate: "",
     endDate: "",
+    themeColor: "#6366f1",
+    registerBackground: "",
+    checkinBackground: "",
+    luckyDrawBackground: "",
+    luckyDrawAnimation: "pulse",
+    coverImage: "",
+    allowGroupRegistration: false,
   });
 
   // Load events
@@ -123,9 +130,21 @@ export default function AdminPage() {
     setLoading(true);
     try {
       const payload = {
-        ...newEvent,
+        name: newEvent.name,
+        description: newEvent.description,
+        venue: newEvent.venue,
         startDate: new Date(newEvent.startDate).toISOString(),
         endDate: new Date(newEvent.endDate).toISOString(),
+        coverImage: newEvent.coverImage,
+        status: "DRAFT",
+        settings: {
+          themeColor: newEvent.themeColor,
+          registerBackground: newEvent.registerBackground,
+          checkinBackground: newEvent.checkinBackground,
+          luckyDrawBackground: newEvent.luckyDrawBackground,
+          luckyDrawAnimation: newEvent.luckyDrawAnimation,
+          allowGroupRegistration: newEvent.allowGroupRegistration,
+        }
       };
       const res = await fetch(`${API_URL}/api/events`, {
         method: "POST",
@@ -136,7 +155,7 @@ export default function AdminPage() {
       if (data.success) {
         setEvents([data.data, ...events]);
         setIsCreateEventOpen(false);
-        setNewEvent({ name: "", description: "", venue: "", startDate: "", endDate: "" });
+        setNewEvent({ name: "", description: "", venue: "", startDate: "", endDate: "", themeColor: "#6366f1", registerBackground: "", checkinBackground: "", luckyDrawBackground: "", coverImage: "", allowGroupRegistration: false, luckyDrawAnimation: "pulse" });
         if (!selectedEventId) setSelectedEventId(data.data.id);
       } else {
         alert(`Error: ${data.error}`);
@@ -145,6 +164,24 @@ export default function AdminPage() {
       alert("Failed to create event");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function updateEventStatus(id: string, newStatus: string) {
+    try {
+      const res = await fetch(`${API_URL}/api/events/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setEvents(events.map(ev => ev.id === id ? { ...ev, status: newStatus } : ev));
+      } else {
+        alert(`Error: ${data.error}`);
+      }
+    } catch (err) {
+      alert("Failed to update status");
     }
   }
 
@@ -279,9 +316,18 @@ export default function AdminPage() {
                 <div key={ev.id} className="glass-card">
                   <div className="flex-between" style={{ marginBottom: "var(--space-3)" }}>
                     <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 700 }}>{ev.name}</h3>
-                    <span className={`badge badge--${ev.status === "ACTIVE" ? "success" : ev.status === "PUBLISHED" ? "primary" : "neutral"}`}>
-                      {ev.status}
-                    </span>
+                    <select
+                      className={`badge badge--${ev.status === "ACTIVE" ? "success" : ev.status === "PUBLISHED" ? "primary" : "neutral"}`}
+                      style={{ border: "none", outline: "none", cursor: "pointer", fontFamily: "inherit" }}
+                      value={ev.status}
+                      onChange={(e) => updateEventStatus(ev.id, e.target.value)}
+                    >
+                      <option value="DRAFT">DRAFT</option>
+                      <option value="PUBLISHED">PUBLISHED</option>
+                      <option value="ACTIVE">ACTIVE</option>
+                      <option value="CLOSED">CLOSED</option>
+                      <option value="ARCHIVED">ARCHIVED</option>
+                    </select>
                   </div>
                   <p style={{ fontSize: "var(--text-sm)", color: "var(--text-secondary)", marginBottom: "var(--space-3)" }}>
                     {ev.description || "ไม่มีรายละเอียด"}
@@ -580,6 +626,86 @@ export default function AdminPage() {
               value={newEvent.endDate}
               onChange={(e) => setNewEvent({ ...newEvent, endDate: e.target.value })}
             />
+          </div>
+          
+          <Input
+            label="รูปภาพหน้าปก (Cover Image URL)"
+            value={newEvent.coverImage}
+            onChange={(e) => setNewEvent({ ...newEvent, coverImage: e.target.value })}
+            placeholder="https://... (สำหรับแสดงในการ์ดงาน)"
+          />
+
+          <div style={{ borderTop: "1px solid var(--border-subtle)", marginTop: "var(--space-2)", paddingTop: "var(--space-4)" }}>
+            <h4 style={{ marginBottom: "var(--space-3)", fontSize: "var(--text-sm)", fontWeight: 600 }}>การตั้งค่า (Settings)</h4>
+            
+            <div className="form-group" style={{ marginBottom: "var(--space-4)" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={newEvent.allowGroupRegistration}
+                  onChange={(e) => setNewEvent({ ...newEvent, allowGroupRegistration: e.target.checked })}
+                  style={{ width: "16px", height: "16px" }}
+                />
+                <span style={{ fontSize: "var(--text-sm)" }}>เปิดให้ลงทะเบียนแบบกลุ่ม (Group Registration)</span>
+              </label>
+            </div>
+
+            <div className="form-group" style={{ marginBottom: "var(--space-4)" }}>
+              <label className="form-label">รูปแบบ Animation ลุ้นรางวัล (Lucky Draw)</label>
+              <select
+                className="form-input"
+                value={newEvent.luckyDrawAnimation}
+                onChange={(e) => setNewEvent({ ...newEvent, luckyDrawAnimation: e.target.value })}
+              >
+                <option value="pulse">Pulse (กระพริบขยาย)</option>
+                <option value="slot">Slot (เลื่อนขึ้นเหมือนสล็อต)</option>
+                <option value="random">Random (สุ่มสีและตำแหน่ง)</option>
+              </select>
+            </div>
+          </div>
+
+          <div style={{ borderTop: "1px solid var(--border-subtle)", marginTop: "var(--space-2)", paddingTop: "var(--space-4)" }}>
+            <h4 style={{ marginBottom: "var(--space-3)", fontSize: "var(--text-sm)", fontWeight: 600 }}>การตกแต่ง (Theme & Background)</h4>
+            <div className="grid grid-2 gap-4" style={{ marginBottom: "var(--space-4)" }}>
+              <div className="form-group">
+                <label className="form-label" style={{ marginBottom: "var(--space-2)", display: "block" }}>สีธีม (Theme Color)</label>
+                <div style={{ display: "flex", gap: "var(--space-2)", alignItems: "center" }}>
+                  <input
+                    type="color"
+                    value={newEvent.themeColor}
+                    onChange={(e) => setNewEvent({ ...newEvent, themeColor: e.target.value })}
+                    style={{ width: "40px", height: "40px", padding: "0", border: "none", borderRadius: "var(--radius-md)", cursor: "pointer" }}
+                  />
+                  <input
+                    className="form-input"
+                    value={newEvent.themeColor}
+                    onChange={(e) => setNewEvent({ ...newEvent, themeColor: e.target.value })}
+                    placeholder="#6366f1"
+                    style={{ flex: 1 }}
+                  />
+                </div>
+              </div>
+              <Input
+                label="ภาพพื้นหลังหน้า Register (URL)"
+                value={newEvent.registerBackground}
+                onChange={(e) => setNewEvent({ ...newEvent, registerBackground: e.target.value })}
+                placeholder="https://..."
+              />
+            </div>
+            <div className="grid grid-2 gap-4">
+              <Input
+                label="ภาพพื้นหลังหน้า Check-in (URL)"
+                value={newEvent.checkinBackground}
+                onChange={(e) => setNewEvent({ ...newEvent, checkinBackground: e.target.value })}
+                placeholder="https://..."
+              />
+              <Input
+                label="ภาพพื้นหลังหน้า Lucky Draw (URL)"
+                value={newEvent.luckyDrawBackground}
+                onChange={(e) => setNewEvent({ ...newEvent, luckyDrawBackground: e.target.value })}
+                placeholder="https://..."
+              />
+            </div>
           </div>
         </form>
       </Modal>

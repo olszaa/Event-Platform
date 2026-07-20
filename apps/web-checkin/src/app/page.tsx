@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { io, Socket } from "socket.io-client";
-import type { CheckinEvent, CheckinCountEvent, CheckinPoint } from "@event-platform/types";
+import type { CheckinEvent, CheckinCountEvent, CheckinPoint, Event } from "@event-platform/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL || "http://localhost:4000";
@@ -18,7 +18,7 @@ interface CheckinResult {
 
 export default function CheckinPage() {
   const [eventId, setEventId] = useState("");
-  const [events, setEvents] = useState<{ id: string; name: string }[]>([]);
+  const [events, setEvents] = useState<Event[]>([]);
   const [checkpoints, setCheckpoints] = useState<CheckinPoint[]>([]);
   const [selectedPoint, setSelectedPoint] = useState("");
   const [mode, setMode] = useState<"scan" | "search">("scan");
@@ -209,8 +209,14 @@ export default function CheckinPage() {
     setTimeout(() => setLastCheckin(null), 3000);
   }
 
+  const selectedEvent = events.find((e) => e.id === eventId);
+  const bgUrl = selectedEvent?.settings?.checkinBackground;
+
   return (
-    <div style={{ minHeight: "100vh" }}>
+    <div style={{ 
+      minHeight: "100vh",
+      background: bgUrl ? `url(${bgUrl}) center/cover fixed no-repeat` : undefined
+    }}>
       {/* Header */}
       <header
         style={{

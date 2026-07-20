@@ -23,7 +23,7 @@ const server = createServer(app);
 // Socket.io setup with typed events
 const io = new Server<ClientToServerEvents, ServerToClientEvents>(server, {
   cors: {
-    origin: process.env.CORS_ORIGIN?.split(",") || [
+    origin: process.env.CORS_ORIGIN === "*" ? "*" : process.env.CORS_ORIGIN?.split(",") || [
       "http://localhost:3000",
       "http://localhost:3001",
       "http://localhost:3002",
@@ -35,7 +35,7 @@ const io = new Server<ClientToServerEvents, ServerToClientEvents>(server, {
 
 // Middleware
 app.use(cors({
-  origin: process.env.CORS_ORIGIN?.split(",") || [
+  origin: process.env.CORS_ORIGIN === "*" ? "*" : process.env.CORS_ORIGIN?.split(",") || [
     "http://localhost:3000",
     "http://localhost:3001",
     "http://localhost:3002",

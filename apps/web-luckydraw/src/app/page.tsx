@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { io, Socket } from "socket.io-client";
-import type { DrawResultEvent, DrawSpinningEvent } from "@event-platform/types";
+import type { DrawResultEvent, DrawSpinningEvent, Event } from "@event-platform/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL || "http://localhost:4000";
@@ -34,7 +34,7 @@ const CONFETTI_COLORS = [
 
 export default function LuckyDrawPage() {
   const [eventId, setEventId] = useState("");
-  const [events, setEvents] = useState<{ id: string; name: string }[]>([]);
+  const [events, setEvents] = useState<Event[]>([]);
   const [prizes, setPrizes] = useState<Prize[]>([]);
   const [selectedPrize, setSelectedPrize] = useState<Prize | null>(null);
   const [drawState, setDrawState] = useState<DrawState>("idle");
@@ -229,8 +229,15 @@ export default function LuckyDrawPage() {
     }
   }
 
+  const selectedEvent = events.find((e) => e.id === eventId);
+  const bgUrl = selectedEvent?.settings?.luckyDrawBackground;
+  const animType = selectedEvent?.settings?.luckyDrawAnimation || "pulse";
+
   return (
-    <>
+    <div style={{
+      minHeight: "100vh",
+      background: bgUrl ? `url(${bgUrl}) center/cover fixed no-repeat` : undefined
+    }}>
       {/* Confetti */}
       {confetti.length > 0 && (
         <div className="confetti-container">
@@ -280,7 +287,17 @@ export default function LuckyDrawPage() {
 
             <div className="draw-slot">
               <div className="draw-slot__inner">
-                <div className="draw-slot__item" style={{ animation: drawState === "spinning" ? "pulse 0.3s infinite" : "none" }}>
+                <div 
+                  className="draw-slot__item" 
+                  style={{ 
+                    animation: drawState === "spinning" && animType === "pulse" ? "pulse 0.3s infinite" : "none",
+                    transform: drawState === "spinning" && animType === "random" ? `scale(${1 + Math.random() * 0.4}) rotate(${Math.random() * 20 - 10}deg)` : 
+                               drawState === "spinning" && animType === "slot" ? `translateY(${(currentSpinIndex % 2 === 0 ? -15 : 15)}px)` : "none",
+                    color: drawState === "spinning" && animType === "random" ? `hsl(${Math.random() * 360}, 80%, 60%)` : "inherit",
+                    filter: drawState === "spinning" && animType === "slot" ? "blur(2px)" : "none",
+                    transition: "all 0.05s"
+                  }}
+                >
                   {drawState === "selecting" ? (
                     <span className="spinner spinner--lg" />
                   ) : (
@@ -433,6 +450,6 @@ export default function LuckyDrawPage() {
           </div>
         )}
       </div>
-    </>
+    </div>
   );
 }

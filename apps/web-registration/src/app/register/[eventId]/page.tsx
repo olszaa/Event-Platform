@@ -273,8 +273,15 @@ export default function RegisterPage() {
     );
   }
 
+  const themeColor = event?.settings?.themeColor || "var(--color-primary)";
+  const bgUrl = event?.settings?.registerBackground;
+
   return (
-    <div style={{ minHeight: "100vh", padding: "var(--space-6)" }}>
+    <div style={{ 
+      minHeight: "100vh", 
+      padding: "var(--space-6)",
+      background: bgUrl ? `url(${bgUrl}) center/cover fixed no-repeat` : undefined
+    }}>
       <div className="container" style={{ maxWidth: "700px" }}>
         {/* Back */}
         <a
@@ -292,8 +299,8 @@ export default function RegisterPage() {
         </a>
 
         {/* Event Header */}
-        <div className="glass-card" style={{ marginBottom: "var(--space-6)" }}>
-          <h1 style={{ fontSize: "var(--text-2xl)", fontWeight: 800, marginBottom: "var(--space-2)" }}>
+        <div className="glass-card" style={{ marginBottom: "var(--space-6)", borderTop: `4px solid ${themeColor}` }}>
+          <h1 style={{ fontSize: "var(--text-2xl)", fontWeight: 800, marginBottom: "var(--space-2)", color: themeColor }}>
             {event.name}
           </h1>
           <div
@@ -318,6 +325,14 @@ export default function RegisterPage() {
         </div>
 
         {/* Registration Form */}
+        {event.status === "CLOSED" ? (
+          <div className="glass-card" style={{ marginBottom: "var(--space-6)", textAlign: "center", padding: "var(--space-12)" }}>
+            <div style={{ fontSize: "4rem", marginBottom: "var(--space-4)" }}>⌛</div>
+            <h2 style={{ fontSize: "var(--text-xl)", fontWeight: 700, marginBottom: "var(--space-2)" }}>ปิดรับลงทะเบียนแล้ว</h2>
+            <p style={{ color: "var(--text-secondary)", marginBottom: "var(--space-6)" }}>งานอีเว้นท์นี้ได้ปิดรับลงทะเบียนแล้ว</p>
+            <a href="/" className="btn btn--secondary">กลับหน้าหลัก</a>
+          </div>
+        ) : (
         <form onSubmit={handleSubmit}>
           <div className="glass-card" style={{ marginBottom: "var(--space-6)" }}>
             <h2
@@ -418,6 +433,7 @@ export default function RegisterPage() {
           </div>
 
           {/* Group Registration Toggle */}
+          {event.settings?.allowGroupRegistration && (
           <div className="glass-card" style={{ marginBottom: "var(--space-6)" }}>
             <div className="flex-between" style={{ marginBottom: isGroup ? "var(--space-4)" : 0 }}>
               <h2 style={{ fontSize: "var(--text-lg)", fontWeight: 700, display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
@@ -517,6 +533,7 @@ export default function RegisterPage() {
               </div>
             )}
           </div>
+          )}
 
           {/* Submit */}
           {errors.submit && (
@@ -539,7 +556,7 @@ export default function RegisterPage() {
             type="submit"
             className="btn btn--primary btn--xl"
             disabled={submitting}
-            style={{ width: "100%" }}
+            style={{ width: "100%", backgroundColor: themeColor, borderColor: themeColor }}
           >
             {submitting ? (
               <>
@@ -550,6 +567,7 @@ export default function RegisterPage() {
             )}
           </button>
         </form>
+        )}
       </div>
     </div>
   );

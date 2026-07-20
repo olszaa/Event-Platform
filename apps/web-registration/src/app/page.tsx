@@ -10,7 +10,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`${API_URL}/api/events?status=PUBLISHED`)
+    fetch(`${API_URL}/api/events?status=PUBLISHED,ACTIVE,CLOSED`)
       .then((r) => r.json())
       .then((res) => {
         if (res.success) setEvents(res.data);
@@ -96,78 +96,113 @@ export default function HomePage() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-3 gap-6">
-            {events.map((event) => (
-              <a
-                key={event.id}
-                href={`/register/${event.id}`}
-                style={{ textDecoration: "none", color: "inherit" }}
-              >
-                <div className="glass-card" style={{ height: "100%", transition: "all 0.3s" }}>
-                  {/* Event Cover */}
-                  <div
-                    style={{
-                      height: "160px",
-                      borderRadius: "var(--radius-lg)",
-                      marginBottom: "var(--space-4)",
-                      background:
-                        "linear-gradient(135deg, var(--bg-tertiary) 0%, var(--color-primary-dark) 100%)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: "3rem",
-                    }}
-                  >
-                    🎪
-                  </div>
-                  <h3
-                    style={{
-                      fontSize: "var(--text-lg)",
-                      fontWeight: 700,
-                      marginBottom: "var(--space-2)",
-                    }}
-                  >
-                    {event.name}
-                  </h3>
-                  {event.description && (
-                    <p
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-12)" }}>
+            {/* Featured Event (Top Card) */}
+            {events.length > 0 && (() => {
+              const featured = events[0];
+              const themeColor = featured.settings?.themeColor || "var(--color-primary-dark)";
+              const bgUrl = featured.coverImage || featured.settings?.registerBackground;
+              
+              return (
+                <a
+                  href={`/register/${featured.id}`}
+                  style={{ textDecoration: "none", color: "inherit", display: "block" }}
+                >
+                  <div className="glass-card" style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-6)", padding: "var(--space-8)", position: "relative", overflow: "hidden" }}>
+                    <div
                       style={{
-                        fontSize: "var(--text-sm)",
-                        color: "var(--text-secondary)",
-                        marginBottom: "var(--space-3)",
-                        display: "-webkit-box",
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: "vertical",
-                        overflow: "hidden",
+                        flex: "1 1 300px",
+                        height: "300px",
+                        borderRadius: "var(--radius-lg)",
+                        background: bgUrl ? `url(${bgUrl}) center/cover no-repeat` : `linear-gradient(135deg, var(--bg-tertiary) 0%, ${themeColor} 100%)`,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "5rem",
                       }}
                     >
-                      {event.description}
-                    </p>
-                  )}
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: "var(--space-4)",
-                      fontSize: "var(--text-xs)",
-                      color: "var(--text-muted)",
-                    }}
-                  >
-                    <span>
-                      📅{" "}
-                      {new Date(event.startDate).toLocaleDateString("th-TH", {
-                        year: "numeric",
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </span>
-                    {event.venue && <span>📍 {event.venue}</span>}
+                      {!bgUrl && "🎪"}
+                    </div>
+                    <div style={{ flex: "2 1 400px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                      <div style={{ marginBottom: "var(--space-2)" }}>
+                        <span className="badge badge--primary" style={{ backgroundColor: themeColor, color: "#fff", borderColor: themeColor }}>🔥 งานแนะนำ</span>
+                      </div>
+                      <h2 style={{ fontSize: "var(--text-3xl)", fontWeight: 800, marginBottom: "var(--space-4)" }}>{featured.name}</h2>
+                      <p style={{ fontSize: "var(--text-base)", color: "var(--text-secondary)", marginBottom: "var(--space-6)", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                        {featured.description || "ไม่มีรายละเอียดเพิ่มเติม"}
+                      </p>
+                      <div style={{ display: "flex", gap: "var(--space-4)", fontSize: "var(--text-sm)", color: "var(--text-muted)", marginBottom: "var(--space-6)" }}>
+                        <span>📅 {new Date(featured.startDate).toLocaleDateString("th-TH", { year: "numeric", month: "long", day: "numeric" })}</span>
+                        {featured.venue && <span>📍 {featured.venue}</span>}
+                      </div>
+                      <div>
+                        <span 
+                          className={`btn ${featured.status === "CLOSED" ? "btn--neutral" : "btn--primary"}`} 
+                          style={featured.status === "CLOSED" ? {} : { backgroundColor: themeColor, borderColor: themeColor }}
+                        >
+                          {featured.status === "CLOSED" ? "ประวัติงาน (ปิดรับลงทะเบียน)" : "ลงทะเบียนเข้างาน →"}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div style={{ marginTop: "var(--space-4)" }}>
-                    <span className="badge badge--primary">เปิดลงทะเบียน</span>
-                  </div>
+                </a>
+              );
+            })()}
+
+            {/* Other Events List (Bottom List) */}
+            {events.length > 1 && (
+              <div>
+                <h3 style={{ fontSize: "var(--text-xl)", fontWeight: 700, marginBottom: "var(--space-6)", paddingBottom: "var(--space-2)", borderBottom: "1px solid var(--border-subtle)" }}>
+                  งาน Event อื่นๆ
+                </h3>
+                <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+                  {events.slice(1).map((event) => {
+                    const themeColor = event.settings?.themeColor || "var(--color-primary)";
+                    const bgUrl = event.coverImage || event.settings?.registerBackground;
+                    return (
+                      <a
+                        key={event.id}
+                        href={`/register/${event.id}`}
+                        style={{ textDecoration: "none", color: "inherit" }}
+                      >
+                        <div className="glass-card" style={{ display: "flex", alignItems: "center", gap: "var(--space-4)", padding: "var(--space-4)", transition: "all 0.3s" }}>
+                          <div
+                            style={{
+                              width: "80px",
+                              height: "80px",
+                              borderRadius: "var(--radius-md)",
+                              background: bgUrl ? `url(${bgUrl}) center/cover no-repeat` : `linear-gradient(135deg, var(--bg-tertiary) 0%, ${themeColor} 100%)`,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontSize: "2rem",
+                              flexShrink: 0
+                            }}
+                          >
+                            {!bgUrl && "🎪"}
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <h4 style={{ fontSize: "var(--text-lg)", fontWeight: 700, marginBottom: "var(--space-1)" }}>{event.name}</h4>
+                            <div style={{ display: "flex", gap: "var(--space-4)", fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
+                              <span>📅 {new Date(event.startDate).toLocaleDateString("th-TH")}</span>
+                              {event.venue && <span>📍 {event.venue}</span>}
+                            </div>
+                          </div>
+                          <div>
+                            <span 
+                              className={`btn btn--sm ${event.status === "CLOSED" ? "btn--neutral" : "btn--ghost"}`} 
+                              style={event.status === "CLOSED" ? {} : { color: themeColor }}
+                            >
+                              {event.status === "CLOSED" ? "ประวัติงาน" : "ดูรายละเอียด"}
+                            </span>
+                          </div>
+                        </div>
+                      </a>
+                    );
+                  })}
                 </div>
-              </a>
-            ))}
+              </div>
+            )}
           </div>
         )}
       </main>
