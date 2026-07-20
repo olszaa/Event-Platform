@@ -29,24 +29,14 @@ const prisma = new PrismaClient();
 // Socket.io setup with typed events
 const io = new Server<ClientToServerEvents, ServerToClientEvents>(server, {
   cors: {
-    origin: process.env.CORS_ORIGIN === "*" ? "*" : process.env.CORS_ORIGIN?.split(",") || [
-      "http://localhost:3000",
-      "http://localhost:3001",
-      "http://localhost:3002",
-      "http://localhost:3003",
-    ],
+    origin: process.env.CORS_ORIGIN === "strict" ? process.env.CORS_ORIGIN?.split(",") : "*",
     methods: ["GET", "POST"],
   },
 });
 
 // Middleware
 app.use(cors({
-  origin: process.env.CORS_ORIGIN === "*" ? "*" : process.env.CORS_ORIGIN?.split(",") || [
-    "http://localhost:3000",
-    "http://localhost:3001",
-    "http://localhost:3002",
-    "http://localhost:3003",
-  ],
+  origin: process.env.CORS_ORIGIN === "strict" ? process.env.CORS_ORIGIN?.split(",") : "*",
 }));
 app.use(helmet());
 app.use(morgan("dev"));
