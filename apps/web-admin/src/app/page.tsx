@@ -96,7 +96,7 @@ export default function AdminPage() {
     }
   };
 
-  const getAuthHeaders = () => {
+  const getAuthHeaders = (): Record<string, string> => {
     return token ? { Authorization: `Bearer ${token}` } : {};
   };
 
@@ -170,7 +170,7 @@ export default function AdminPage() {
     }
 
     Promise.all(loads).finally(() => setLoading(false));
-  }, [selectedEventId, activeTab]);
+  }, [selectedEventId, activeTab, token]);
 
   async function handleExport() {
     window.open(`${API_URL}/api/registrations/export?eventId=${selectedEventId}`, "_blank");
