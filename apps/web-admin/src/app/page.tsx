@@ -811,12 +811,67 @@ export default function AdminPage() {
             />
           </div>
           
-          <Input
-            label="รูปภาพหน้าปก (Cover Image URL)"
-            value={newEvent.coverImage}
-            onChange={(e) => setNewEvent({ ...newEvent, coverImage: e.target.value })}
-            placeholder="https://... (สำหรับแสดงในการ์ดงาน)"
-          />
+          <div className="form-group" style={{ marginBottom: "var(--space-4)" }}>
+            <label className="form-label" style={{ marginBottom: "var(--space-1)", display: "block" }}>
+              รูปภาพหน้าปก (Cover Image)
+            </label>
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+              <input
+                type="file"
+                accept="image/*"
+                className="form-input"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                      setNewEvent((prev) => ({ ...prev, coverImage: reader.result as string }));
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }}
+              />
+              <div style={{ fontSize: "0.75rem", color: "var(--text-tertiary)" }}>
+                หรือใส่ลิงก์รูปภาพ (Image URL):
+              </div>
+              <input
+                className="form-input"
+                type="text"
+                placeholder="https://... (สำหรับแสดงในการ์ดงาน)"
+                value={newEvent.coverImage}
+                onChange={(e) => setNewEvent({ ...newEvent, coverImage: e.target.value })}
+              />
+              {newEvent.coverImage && (
+                <div style={{ position: "relative", display: "inline-block", maxWidth: "200px" }}>
+                  <img
+                    src={newEvent.coverImage}
+                    alt="Cover Preview"
+                    style={{ width: "100%", maxHeight: "120px", borderRadius: "var(--radius-md)", objectFit: "cover", border: "1px solid var(--border-subtle)" }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setNewEvent({ ...newEvent, coverImage: "" })}
+                    style={{
+                      position: "absolute",
+                      top: "4px",
+                      right: "4px",
+                      background: "rgba(0,0,0,0.7)",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: "50%",
+                      width: "20px",
+                      height: "20px",
+                      lineHeight: "18px",
+                      fontSize: "12px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
 
           <div style={{ borderTop: "1px solid var(--border-subtle)", marginTop: "var(--space-2)", paddingTop: "var(--space-4)" }}>
             <h4 style={{ marginBottom: "var(--space-3)", fontSize: "var(--text-sm)", fontWeight: 600 }}>การตั้งค่า (Settings)</h4>
