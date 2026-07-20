@@ -99,7 +99,7 @@ export default function HomePage() {
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-12)" }}>
             {/* Featured Event (Top Card) */}
             {events.length > 0 && (() => {
-              const featured = events[0];
+              const featured = events[0]!;
               const themeColor = featured.settings?.themeColor || "var(--color-primary-dark)";
               const bgUrl = featured.coverImage || featured.settings?.registerBackground;
               
