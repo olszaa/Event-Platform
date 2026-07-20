@@ -1,12 +1,18 @@
 import { PrismaClient } from "@prisma/client";
 
+const rawUrl = process.env.DATABASE_URL || "";
+const cleanUrl = rawUrl.trim().replace(/^["']|["']$/g, "");
+
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-export const prisma = globalForPrisma.prisma ?? new PrismaClient({
-  log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
-});
+export const prisma =
+  globalForPrisma.prisma ??
+  new PrismaClient({
+    ...(cleanUrl ? { datasources: { db: { url: cleanUrl } } } : {}),
+    log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
+  });
 
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;

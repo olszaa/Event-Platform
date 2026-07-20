@@ -19,12 +19,11 @@ import { errorHandler } from "./middleware/errorHandler";
 import { verifyToken } from "./middleware/auth";
 import { setupSocketHandlers } from "./socket";
 import type { ServerToClientEvents, ClientToServerEvents } from "@event-platform/types";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "./utils/prisma";
 import bcrypt from "bcryptjs";
 
 const app = express();
 const server = createServer(app);
-const prisma = new PrismaClient();
 
 // Socket.io setup with typed events
 const io = new Server<ClientToServerEvents, ServerToClientEvents>(server, {

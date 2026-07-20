@@ -1,9 +1,8 @@
 import { Router } from "express";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../utils/prisma";
 import bcrypt from "bcryptjs";
 
 const router: Router = Router();
-const prisma = new PrismaClient();
 
 // GET all users
 router.get("/", async (req, res) => {
