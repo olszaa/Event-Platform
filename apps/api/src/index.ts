@@ -71,7 +71,7 @@ app.use(errorHandler);
 setupSocketHandlers(io);
 
 // Start server
-const PORT = process.env.API_PORT || 4000;
+const PORT = process.env.PORT || process.env.API_PORT || 4000;
 server.listen(PORT, () => {
   console.log(`
   ╔══════════════════════════════════════╗
