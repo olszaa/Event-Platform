@@ -128,11 +128,24 @@ checkinsRouter.get(
     const eventId = String(req.query.eventId || "");
     if (!eventId) throw createError(400, "eventId is required");
 
-    const points = await prisma.checkinPoint.findMany({
+    let points = await prisma.checkinPoint.findMany({
       where: { eventId },
       include: { _count: { select: { checkins: true } } },
       orderBy: { sortOrder: "asc" },
     });
+
+    if (points.length === 0) {
+      const defaultPoint = await prisma.checkinPoint.create({
+        data: {
+          eventId,
+          name: "จุดเช็กอินหลัก (Main Gate)",
+          location: "ทางเข้าหลัก",
+          isActive: true,
+          sortOrder: 1,
+        },
+      });
+      points = [{ ...defaultPoint, _count: { checkins: 0 } }];
+    }
 
     res.json({ success: true, data: points });
   })

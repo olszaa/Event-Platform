@@ -29,19 +29,30 @@ function getThaiStatusLabel(status: string) {
 
 export default function CheckinPage() {
   const [eventId, setEventIdRaw] = useState("");
+  const [selectedPoint, setSelectedPointRaw] = useState("");
+
+  const setSelectedPoint = (pointId: string) => {
+    setSelectedPointRaw(pointId);
+    if (pointId) {
+      localStorage.setItem("checkin_point_id", pointId);
+    } else {
+      localStorage.removeItem("checkin_point_id");
+    }
+  };
 
   const setEventId = (id: string) => {
     setEventIdRaw(id);
+    setSelectedPoint("");
     if (id) {
       localStorage.setItem("checkin_event_id", id);
     } else {
       localStorage.removeItem("checkin_event_id");
+      localStorage.removeItem("checkin_point_id");
     }
   };
 
   const [events, setEvents] = useState<Event[]>([]);
   const [checkpoints, setCheckpoints] = useState<CheckinPoint[]>([]);
-  const [selectedPoint, setSelectedPoint] = useState("");
   const [mode, setMode] = useState<"scan" | "search">("scan");
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -73,7 +84,15 @@ export default function CheckinPage() {
       .then((res) => {
         if (res.success) {
           setCheckpoints(res.data);
-          if (res.data.length > 0) setSelectedPoint(res.data[0].id);
+          const savedPoint = localStorage.getItem("checkin_point_id");
+          const foundSaved = res.data.find((cp: any) => cp.id === savedPoint && cp.isActive !== false);
+          if (foundSaved) {
+            setSelectedPointRaw(foundSaved.id);
+          } else if (res.data.length > 0) {
+            const firstActive = res.data.find((cp: any) => cp.isActive !== false) || res.data[0];
+            setSelectedPointRaw(firstActive.id);
+            localStorage.setItem("checkin_point_id", firstActive.id);
+          }
         }
       });
 
