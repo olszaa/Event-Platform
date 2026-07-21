@@ -196,38 +196,49 @@ export default function LuckyDrawPage() {
 
     setDrawState("selecting");
 
-    // Create draw session
-    const res = await fetch(`${API_URL}/api/draws/start`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-      body: JSON.stringify({ eventId, prizeId: selectedPrize.id, drawCount: 1 }),
-    });
-    const data = await res.json();
-    if (!data.success) {
-      alert(data.error || "ไม่สามารถเริ่มจับรางวัลได้");
-      setDrawState("idle");
-      return;
-    }
-
-    setSessionId(data.data.id);
-    setDrawState("spinning");
-
-    // Spin!
-    const spinRes = await fetch(`${API_URL}/api/draws/${data.data.id}/spin`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ count: 1 }),
-    });
-    const spinData = await spinRes.json();
-
-    // Socket.io will handle the result event
-    if (!spinData.success && !socketRef.current?.connected) {
-      // Fallback if socket doesn't trigger
-      if (spinData.data?.winners) {
-        setWinners(spinData.data.winners);
-        setDrawState("winner");
-        triggerConfetti();
+    try {
+      // Create draw session
+      const res = await fetch(`${API_URL}/api/draws/start`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+        body: JSON.stringify({ eventId, prizeId: selectedPrize.id, drawCount: 1 }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        alert(data.error || "ไม่สามารถเริ่มจับรางวัลได้");
+        setDrawState("idle");
+        return;
       }
+
+      setSessionId(data.data.id);
+      setDrawState("spinning");
+
+      // Spin!
+      const spinRes = await fetch(`${API_URL}/api/draws/${data.data.id}/spin`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ count: 1 }),
+      });
+      const spinData = await spinRes.json();
+
+      if (!spinData.success) {
+        alert(spinData.error || "เกิดข้อผิดพลาดขณะจับรางวัล");
+        setDrawState("idle");
+        return;
+      }
+
+      // Socket.io will handle the result event
+      if (!spinData.success && !socketRef.current?.connected) {
+        // Fallback if socket doesn't trigger
+        if (spinData.data?.winners) {
+          setWinners(spinData.data.winners);
+          setDrawState("winner");
+          triggerConfetti();
+        }
+      }
+    } catch {
+      alert("เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง");
+      setDrawState("idle");
     }
   }
 

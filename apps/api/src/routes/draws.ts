@@ -8,50 +8,50 @@ import type { ServerToClientEvents, ClientToServerEvents } from "@event-platform
 
 export const drawsRouter: Router = Router();
 
-// POST /api/draws — Start a new draw session
-drawsRouter.post(
-  "/",
-  asyncHandler(async (req, res) => {
-    const { eventId, prizeId, drawCount = 1, performedBy } = req.body;
+const handleStartDraw = asyncHandler(async (req, res) => {
+  const { eventId, prizeId, drawCount = 1, performedBy } = req.body;
 
-    if (!eventId || !prizeId) throw createError(400, "eventId and prizeId are required");
+  if (!eventId || !prizeId) throw createError(400, "eventId and prizeId are required");
 
-    // Verify prize has remaining quantity
-    const prize = await prisma.prize.findUnique({ where: { id: prizeId } });
-    if (!prize) throw createError(404, "Prize not found");
-    if (prize.quantity - prize.awarded <= 0) throw createError(400, "No prizes remaining");
+  // Verify prize has remaining quantity
+  const prize = await prisma.prize.findUnique({ where: { id: prizeId } });
+  if (!prize) throw createError(404, "Prize not found");
+  if (prize.quantity - prize.awarded <= 0) throw createError(400, "No prizes remaining");
 
-    const session = await prisma.drawSession.create({
-      data: {
-        eventId,
-        prizeId,
-        drawCount,
-        status: "PENDING",
-        performedBy: performedBy || null,
-      },
-      include: { prize: true },
-    });
-
-    await logAudit({
-      entityType: "DrawSession",
-      entityId: session.id,
-      action: "DRAW_START",
-      newData: { prizeId, prizeName: prize.name, drawCount },
-      performedBy,
-    });
-
-    // Emit draw start event
-    const io: Server<ClientToServerEvents, ServerToClientEvents> = req.app.get("io");
-    io.to(`event:${eventId}`).emit("draw:start", {
-      sessionId: session.id,
+  const session = await prisma.drawSession.create({
+    data: {
       eventId,
-      prizeName: prize.name,
-      prizeImage: prize.image || undefined,
-    });
+      prizeId,
+      drawCount,
+      status: "PENDING",
+      performedBy: performedBy || null,
+    },
+    include: { prize: true },
+  });
 
-    res.status(201).json({ success: true, data: session });
-  })
-);
+  await logAudit({
+    entityType: "DrawSession",
+    entityId: session.id,
+    action: "DRAW_START",
+    newData: { prizeId, prizeName: prize.name, drawCount },
+    performedBy,
+  });
+
+  // Emit draw start event
+  const io: Server<ClientToServerEvents, ServerToClientEvents> = req.app.get("io");
+  io.to(`event:${eventId}`).emit("draw:start", {
+    sessionId: session.id,
+    eventId,
+    prizeName: prize.name,
+    prizeImage: prize.image || undefined,
+  });
+
+  res.status(201).json({ success: true, data: session });
+});
+
+// POST /api/draws and POST /api/draws/start — Start a new draw session
+drawsRouter.post("/", handleStartDraw);
+drawsRouter.post("/start", handleStartDraw);
 
 // POST /api/draws/:id/spin — Perform the actual draw
 drawsRouter.post(
