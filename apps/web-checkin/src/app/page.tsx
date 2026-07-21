@@ -60,6 +60,7 @@ export default function CheckinPage() {
   const [stats, setStats] = useState({ total: 0, checkedIn: 0, percentage: 0 });
   const [recentCheckins, setRecentCheckins] = useState<CheckinEvent[]>([]);
   const [scanning, setScanning] = useState(false);
+  const [isCameraActive, setIsCameraActive] = useState(true);
   const socketRef = useRef<Socket | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -169,13 +170,13 @@ export default function CheckinPage() {
   }, []);
 
   useEffect(() => {
-    if (mode === "scan" && eventId && selectedPoint) {
+    if (mode === "scan" && eventId && selectedPoint && isCameraActive) {
       startScanning();
     } else {
       stopScanning();
     }
     return () => stopScanning();
-  }, [mode, eventId, selectedPoint, startScanning, stopScanning]);
+  }, [mode, eventId, selectedPoint, isCameraActive, startScanning, stopScanning]);
 
   async function handleQRResult(rawValue: string) {
     // Extract QR code from URL or use directly
@@ -517,9 +518,17 @@ export default function CheckinPage() {
 
               {mode === "scan" ? (
                 <div className="glass-card">
-                  <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 700, marginBottom: "var(--space-4)", display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
-                    📷 สแกน QR Code
-                  </h3>
+                  <div className="flex-between" style={{ marginBottom: "var(--space-4)", alignItems: "center" }}>
+                    <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 700, display: "flex", alignItems: "center", gap: "var(--space-2)", margin: 0 }}>
+                      📷 สแกน QR Code
+                    </h3>
+                    <button
+                      className={`btn ${isCameraActive ? "btn--secondary" : "btn--primary"} btn--sm`}
+                      onClick={() => setIsCameraActive(!isCameraActive)}
+                    >
+                      {isCameraActive ? "⏸️ ปิดกล้อง" : "📷 เปิดกล้อง"}
+                    </button>
+                  </div>
                   <div
                     style={{
                       position: "relative",
@@ -529,55 +538,85 @@ export default function CheckinPage() {
                       aspectRatio: "4/3",
                     }}
                   >
-                    <video
-                      ref={videoRef}
-                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                      playsInline
-                      muted
-                    />
-                    <canvas ref={canvasRef} style={{ display: "none" }} />
-                    {/* Scan overlay */}
-                    <div
-                      style={{
-                        position: "absolute",
-                        inset: 0,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        pointerEvents: "none",
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: "200px",
-                          height: "200px",
-                          border: "3px solid var(--color-primary-light)",
-                          borderRadius: "var(--radius-xl)",
-                          boxShadow: "0 0 0 9999px rgba(0,0,0,0.4)",
-                          animation: "glow-pulse 2s infinite",
-                        }}
-                      />
-                    </div>
-                    {scanning && (
+                    {!isCameraActive ? (
                       <div
                         style={{
                           position: "absolute",
-                          bottom: "var(--space-4)",
-                          left: "50%",
-                          transform: "translateX(-50%)",
-                          background: "rgba(0,0,0,0.7)",
-                          padding: "var(--space-2) var(--space-4)",
-                          borderRadius: "var(--radius-full)",
-                          fontSize: "var(--text-sm)",
-                          color: "var(--color-success-light)",
+                          inset: 0,
                           display: "flex",
+                          flexDirection: "column",
                           alignItems: "center",
-                          gap: "var(--space-2)",
+                          justifyContent: "center",
+                          background: "var(--bg-tertiary)",
+                          gap: "var(--space-3)",
+                          padding: "var(--space-6)",
+                          textAlign: "center",
                         }}
                       >
-                        <span className="spinner spinner--sm" style={{ borderTopColor: "var(--color-success)" }} />
-                        กำลังสแกน...
+                        <div style={{ fontSize: "3rem" }}>📷🚫</div>
+                        <div style={{ fontSize: "var(--text-base)", fontWeight: 600, color: "var(--text-secondary)" }}>
+                          ปิดการใช้งานกล้องอยู่
+                        </div>
+                        <button
+                          className="btn btn--primary btn--md"
+                          onClick={() => setIsCameraActive(true)}
+                        >
+                          📷 เปิดใช้งานกล้องเพื่อสแกน QR
+                        </button>
                       </div>
+                    ) : (
+                      <>
+                        <video
+                          ref={videoRef}
+                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                          playsInline
+                          muted
+                        />
+                        <canvas ref={canvasRef} style={{ display: "none" }} />
+                        {/* Scan overlay */}
+                        <div
+                          style={{
+                            position: "absolute",
+                            inset: 0,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            pointerEvents: "none",
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: "200px",
+                              height: "200px",
+                              border: "3px solid var(--color-primary-light)",
+                              borderRadius: "var(--radius-xl)",
+                              boxShadow: "0 0 0 9999px rgba(0,0,0,0.4)",
+                              animation: "glow-pulse 2s infinite",
+                            }}
+                          />
+                        </div>
+                        {scanning && (
+                          <div
+                            style={{
+                              position: "absolute",
+                              bottom: "var(--space-4)",
+                              left: "50%",
+                              transform: "translateX(-50%)",
+                              background: "rgba(0,0,0,0.7)",
+                              padding: "var(--space-2) var(--space-4)",
+                              borderRadius: "var(--radius-full)",
+                              fontSize: "var(--text-xs)",
+                              color: "#fff",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "var(--space-2)",
+                            }}
+                          >
+                            <span className="spinner spinner--sm" />
+                            กำลังสแกน...
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                   {/* Manual input fallback */}
