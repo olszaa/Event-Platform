@@ -189,11 +189,18 @@ export default function CheckinPage() {
   }
 
   async function performCheckin(qrCode: string) {
+    let pointId = selectedPoint;
+    if (!pointId && checkpoints.length > 0) {
+      const activePoint = checkpoints.find((cp) => cp.isActive !== false) || checkpoints[0];
+      pointId = activePoint.id;
+      setSelectedPoint(pointId);
+    }
+
     try {
       const res = await fetch(`${API_URL}/api/checkin`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ qrCode, checkinPointId: selectedPoint, method: mode === "scan" ? "QR_SCAN" : "SEARCH" }),
+        body: JSON.stringify({ qrCode, checkinPointId: pointId, method: mode === "scan" ? "QR_SCAN" : "SEARCH" }),
       });
       const data = await res.json();
 
@@ -209,7 +216,7 @@ export default function CheckinPage() {
       } else {
         setLastCheckin({ success: false, error: data.error });
       }
-    } catch (err) {
+    } catch {
       setLastCheckin({ success: false, error: "ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้" });
     }
 
@@ -225,11 +232,18 @@ export default function CheckinPage() {
   }
 
   async function checkinByRegistration(regId: string) {
+    let pointId = selectedPoint;
+    if (!pointId && checkpoints.length > 0) {
+      const activePoint = checkpoints.find((cp) => cp.isActive !== false) || checkpoints[0];
+      pointId = activePoint.id;
+      setSelectedPoint(pointId);
+    }
+
     try {
       const res = await fetch(`${API_URL}/api/checkin`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ registrationId: regId, checkinPointId: selectedPoint, method: "SEARCH" }),
+        body: JSON.stringify({ registrationId: regId, checkinPointId: pointId, method: "SEARCH" }),
       });
       const data = await res.json();
       if (data.success) {

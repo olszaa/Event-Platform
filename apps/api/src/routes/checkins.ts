@@ -11,12 +11,11 @@ export const checkinsRouter: Router = Router();
 checkinsRouter.post(
   "/",
   asyncHandler(async (req, res) => {
-    const { qrCode, registrationId, checkinPointId, method = "QR_SCAN", checkedBy } = req.body;
+    let { qrCode, registrationId, checkinPointId, method = "QR_SCAN", checkedBy } = req.body;
 
-    if (!checkinPointId) throw createError(400, "checkinPointId is required");
     if (!qrCode && !registrationId) throw createError(400, "qrCode or registrationId is required");
 
-    // Find registration
+    // Find registration first to validate and get eventId if pointId missing
     let reg;
     if (qrCode) {
       reg = await prisma.registration.findUnique({
@@ -32,6 +31,26 @@ checkinsRouter.post(
 
     if (!reg) throw createError(404, "Registration not found");
     if (reg.status === "CANCELLED") throw createError(400, "Registration is cancelled");
+
+    // Fallback checkinPointId if missing
+    if (!checkinPointId) {
+      let defaultPoint = await prisma.checkinPoint.findFirst({
+        where: { eventId: reg.eventId, isActive: true },
+        orderBy: { sortOrder: "asc" },
+      });
+      if (!defaultPoint) {
+        defaultPoint = await prisma.checkinPoint.create({
+          data: {
+            eventId: reg.eventId,
+            name: "จุดเช็กอินหลัก (Main Gate)",
+            location: "ทางเข้าหลัก",
+            isActive: true,
+            sortOrder: 1,
+          },
+        });
+      }
+      checkinPointId = defaultPoint.id;
+    }
 
     const eventSettings = (reg.event.settings as any) || {};
     const canCheckin =
