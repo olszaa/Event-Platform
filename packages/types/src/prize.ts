@@ -16,6 +16,7 @@ export interface Prize {
   createdAt: string;
   updatedAt: string;
   remaining?: number;
+  eligibleCount?: number;
 }
 
 export interface DrawConditions {

@@ -2,6 +2,7 @@ import { Router } from "express";
 import { prisma } from "../utils/prisma";
 import { asyncHandler } from "../middleware/errorHandler";
 import { logAudit } from "../middleware/audit";
+import { DrawEngine } from "../services/drawEngine";
 
 export const prizesRouter: Router = Router();
 
@@ -21,10 +22,22 @@ prizesRouter.get(
       },
     });
 
-    const data = prizes.map((p) => ({
-      ...p,
-      remaining: p.quantity - p.awarded,
-    }));
+    const data = await Promise.all(
+      prizes.map(async (p) => {
+        let eligibleCount = p.quantity - p.awarded;
+        try {
+          const eligibleCandidates = await DrawEngine.getEligibleCandidates(p.eventId, p.id);
+          eligibleCount = eligibleCandidates.length;
+        } catch {
+          // fallback
+        }
+        return {
+          ...p,
+          remaining: p.quantity - p.awarded,
+          eligibleCount,
+        };
+      })
+    );
 
     res.json({ success: true, data });
   })

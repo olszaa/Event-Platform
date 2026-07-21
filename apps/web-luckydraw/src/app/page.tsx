@@ -17,6 +17,7 @@ interface Prize {
   quantity: number;
   awarded: number;
   remaining: number;
+  eligibleCount?: number;
 }
 
 function getThaiStatusLabel(status: string) {
@@ -570,12 +571,15 @@ export default function LuckyDrawPage() {
                       {selectedPrize.description}
                     </div>
                   )}
-                  <div style={{ marginTop: "var(--space-4)", display: "flex", gap: "var(--space-3)", alignItems: "center" }}>
+                  <div style={{ marginTop: "var(--space-4)", display: "flex", gap: "var(--space-3)", alignItems: "center", flexWrap: "wrap", justifyContent: "center" }}>
                     <span className="badge badge--primary" style={{ fontSize: "var(--text-base)", padding: "var(--space-2) var(--space-4)" }}>
                       🎁 รางวัลทั้งหมด: {selectedPrize.quantity}
                     </span>
                     <span className={`badge ${selectedPrize.remaining > 0 ? "badge--success" : "badge--error"}`} style={{ fontSize: "var(--text-base)", padding: "var(--space-2) var(--space-4)" }}>
                       คงเหลือ: {selectedPrize.remaining} / {selectedPrize.quantity}
+                    </span>
+                    <span className={`badge ${(selectedPrize.eligibleCount ?? selectedPrize.remaining) > 0 ? "badge--primary" : "badge--error"}`} style={{ fontSize: "var(--text-base)", padding: "var(--space-2) var(--space-4)", background: "var(--bg-tertiary)", borderColor: "var(--border-primary)" }}>
+                      👥 ผู้มีสิทธิ์: {selectedPrize.eligibleCount ?? selectedPrize.remaining} คน
                     </span>
                   </div>
                 </div>
@@ -783,12 +787,12 @@ export default function LuckyDrawPage() {
             <input
               type="number"
               min={1}
-              max={selectedPrize ? Math.max(1, selectedPrize.remaining) : 1}
+              max={selectedPrize ? Math.max(1, Math.min(selectedPrize.remaining, selectedPrize.eligibleCount ?? selectedPrize.remaining)) : 1}
               value={drawCountInput}
               onChange={(e) => {
                 const val = Math.max(1, parseInt(e.target.value) || 1);
-                const max = selectedPrize ? selectedPrize.remaining : val;
-                setDrawCountInput(Math.min(val, max));
+                const maxDrawable = selectedPrize ? Math.min(selectedPrize.remaining, selectedPrize.eligibleCount ?? selectedPrize.remaining) : val;
+                setDrawCountInput(Math.min(val, Math.max(1, maxDrawable)));
               }}
               style={{
                 width: "60px",
@@ -806,10 +810,21 @@ export default function LuckyDrawPage() {
 
           <button
             className="btn btn--primary btn--lg"
-            disabled={!selectedPrize || selectedPrize.remaining <= 0 || drawState !== "idle"}
+            disabled={
+              !selectedPrize ||
+              selectedPrize.remaining <= 0 ||
+              (selectedPrize.eligibleCount !== undefined && selectedPrize.eligibleCount <= 0) ||
+              drawState !== "idle"
+            }
             onClick={() => startDraw(drawCountInput)}
           >
-            🎲 สุ่ม {drawCountInput} รางวัล
+            {!selectedPrize
+              ? "🎲 สุ่มรางวัล"
+              : selectedPrize.remaining <= 0
+              ? "❌ รางวัลแจกหมดแล้ว"
+              : selectedPrize.eligibleCount !== undefined && selectedPrize.eligibleCount <= 0
+              ? "❌ ไม่มีผู้มีสิทธิ์ (0 คน)"
+              : `🎲 สุ่ม ${drawCountInput} รางวัล`}
           </button>
         </div>
 
