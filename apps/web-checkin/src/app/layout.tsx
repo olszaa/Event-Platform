@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "@event-platform/ui/src/styles/design-system.css";
+import "./checkin.css";
 
 export const metadata: Metadata = {
   title: "Event Check-in | Event Platform",

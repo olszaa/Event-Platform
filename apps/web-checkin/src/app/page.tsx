@@ -229,7 +229,7 @@ export default function CheckinPage() {
           zIndex: "var(--z-sticky)" as any,
         }}
       >
-        <div className="container flex-between">
+        <div className="container checkin-header-inner">
           <h1 style={{ fontSize: "var(--text-xl)", fontWeight: 800 }}>
             📱 Event Check-in
           </h1>
@@ -262,9 +262,9 @@ export default function CheckinPage() {
         </div>
       </header>
 
-      <main className="container" style={{ padding: "var(--space-6)" }}>
+      <main className="container checkin-container">
         {/* Config Row */}
-        <div className="grid grid-3 gap-4" style={{ marginBottom: "var(--space-6)" }}>
+        <div className="checkin-config-grid">
           <div className="form-group">
             <label className="form-label">เลือกงาน</label>
             <select
@@ -321,28 +321,17 @@ export default function CheckinPage() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-2 gap-6">
+          <div className="checkin-main-grid">
             {/* Left: Scanner / Search */}
             <div>
               {/* Checkin Result Overlay */}
               {lastCheckin && (
                 <div
+                  className="checkin-overlay"
                   style={{
-                    position: "fixed",
-                    top: "50%",
-                    left: "50%",
-                    transform: "translate(-50%, -50%)",
-                    zIndex: 1000,
-                    padding: "var(--space-10)",
-                    borderRadius: "var(--radius-2xl)",
                     background: lastCheckin.success
                       ? "linear-gradient(135deg, rgba(16,185,129,0.95), rgba(5,150,105,0.95))"
                       : "linear-gradient(135deg, rgba(239,68,68,0.95), rgba(220,38,38,0.95))",
-                    color: "white",
-                    textAlign: "center",
-                    minWidth: "350px",
-                    boxShadow: "0 25px 50px rgba(0,0,0,0.5)",
-                    animation: "slideUp 0.3s ease-out",
                   }}
                 >
                   <div style={{ fontSize: "4rem", marginBottom: "var(--space-3)" }}>

@@ -25,6 +25,7 @@ export default function AdminPage() {
   const [loginForm, setLoginForm] = useState({ username: "", password: "", error: "", loading: false });
 
   const [activeTab, setActiveTab] = useState<Tab>("dashboard");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [events, setEvents] = useState<any[]>([]);
   const [selectedEventId, setSelectedEventId] = useState("");
   const [stats, setStats] = useState<any>(null);
@@ -361,8 +362,27 @@ export default function AdminPage() {
 
   return (
     <div className="admin-layout">
+      {/* Mobile Topbar */}
+      <div className="admin-mobile-topbar">
+        <div style={{ fontWeight: 800, fontSize: "var(--text-base)", background: "linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-secondary-light) 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+          ⚡ Event Admin
+        </div>
+        <button
+          className="btn btn--secondary btn--sm"
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          style={{ padding: "var(--space-1) var(--space-3)" }}
+        >
+          {isSidebarOpen ? "✕ ปิด" : "☰ เมนู"}
+        </button>
+      </div>
+
+      {/* Backdrop overlay for mobile */}
+      {isSidebarOpen && (
+        <div className="admin-sidebar-backdrop" onClick={() => setIsSidebarOpen(false)} />
+      )}
+
       {/* Sidebar */}
-      <aside className="admin-sidebar">
+      <aside className={`admin-sidebar ${isSidebarOpen ? "admin-sidebar--open" : ""}`}>
         <div className="admin-sidebar__logo">⚡ Event Admin</div>
 
         {/* Event Selector */}
@@ -387,7 +407,10 @@ export default function AdminPage() {
             <button
               key={item.key}
               className={`admin-nav-item ${activeTab === item.key ? "admin-nav-item--active" : ""}`}
-              onClick={() => setActiveTab(item.key)}
+              onClick={() => {
+                setActiveTab(item.key);
+                setIsSidebarOpen(false);
+              }}
             >
               <span>{item.icon}</span>
               {item.label}
