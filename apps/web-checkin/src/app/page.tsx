@@ -28,7 +28,17 @@ function getThaiStatusLabel(status: string) {
 }
 
 export default function CheckinPage() {
-  const [eventId, setEventId] = useState("");
+  const [eventId, setEventIdRaw] = useState("");
+
+  const setEventId = (id: string) => {
+    setEventIdRaw(id);
+    if (id) {
+      localStorage.setItem("checkin_event_id", id);
+    } else {
+      localStorage.removeItem("checkin_event_id");
+    }
+  };
+
   const [events, setEvents] = useState<Event[]>([]);
   const [checkpoints, setCheckpoints] = useState<CheckinPoint[]>([]);
   const [selectedPoint, setSelectedPoint] = useState("");
@@ -44,8 +54,11 @@ export default function CheckinPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const scanIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Load events
+  // Load events and restore saved eventId
   useEffect(() => {
+    const saved = localStorage.getItem("checkin_event_id");
+    if (saved) setEventIdRaw(saved);
+
     fetch(`${API_URL}/api/events`)
       .then((r) => r.json())
       .then((res) => { if (res.success) setEvents(res.data); })

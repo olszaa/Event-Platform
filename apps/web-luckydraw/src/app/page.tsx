@@ -49,7 +49,17 @@ export default function LuckyDrawPage() {
   const [isCheckingToken, setIsCheckingToken] = useState(true);
   const [loginForm, setLoginForm] = useState({ username: "", password: "", error: "", loading: false });
 
-  const [eventId, setEventId] = useState("");
+  const [eventId, setEventIdRaw] = useState("");
+
+  const setEventId = (id: string) => {
+    setEventIdRaw(id);
+    if (id) {
+      localStorage.setItem("luckydraw_event_id", id);
+    } else {
+      localStorage.removeItem("luckydraw_event_id");
+    }
+  };
+
   const [events, setEvents] = useState<Event[]>([]);
   const [prizes, setPrizes] = useState<Prize[]>([]);
   const [selectedPrize, setSelectedPrize] = useState<Prize | null>(null);
@@ -69,6 +79,8 @@ export default function LuckyDrawPage() {
   useEffect(() => {
     const savedToken = localStorage.getItem("admin_token");
     if (savedToken) setToken(savedToken);
+    const savedEvent = localStorage.getItem("luckydraw_event_id");
+    if (savedEvent) setEventIdRaw(savedEvent);
     setIsCheckingToken(false);
   }, []);
 
@@ -88,7 +100,7 @@ export default function LuckyDrawPage() {
       } else {
         setLoginForm((prev) => ({ ...prev, error: data.message || "Invalid credentials" }));
       }
-    } catch (err) {
+    } catch {
       setLoginForm((prev) => ({ ...prev, error: "Network error" }));
     } finally {
       setLoginForm((prev) => ({ ...prev, loading: false }));
@@ -107,7 +119,10 @@ export default function LuckyDrawPage() {
       .then((res) => {
         if (res.success) {
           setEvents(res.data);
-          if (res.data.length > 0) setEventId(res.data[0].id);
+          const savedEvent = localStorage.getItem("luckydraw_event_id");
+          if (savedEvent && res.data.some((ev: any) => ev.id === savedEvent)) {
+            setEventIdRaw(savedEvent);
+          }
         }
       });
   }, [token]);
