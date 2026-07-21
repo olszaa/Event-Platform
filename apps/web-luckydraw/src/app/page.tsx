@@ -19,6 +19,17 @@ interface Prize {
   remaining: number;
 }
 
+function getThaiStatusLabel(status: string) {
+  switch (status) {
+    case "DRAFT": return "ฉบับร่าง";
+    case "PUBLISHED": return "เปิดบริการ";
+    case "ACTIVE": return "กำลังดำเนินงาน";
+    case "CLOSED": return "เสร็จสิ้นกิจกรรม";
+    case "ARCHIVED": return "จัดเก็บแล้ว";
+    default: return status;
+  }
+}
+
 interface Winner {
   id: string;
   fullName: string;
@@ -339,6 +350,106 @@ export default function LuckyDrawPage() {
     );
   }
 
+  if (!eventId) {
+    return (
+      <div style={{ minHeight: "100vh", background: "var(--bg-primary)" }}>
+        <header
+          style={{
+            padding: "var(--space-6) var(--space-8)",
+            borderBottom: "1px solid var(--border-subtle)",
+            background: "var(--bg-glass)",
+            backdropFilter: "blur(20px)",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+            <span style={{ fontSize: "2rem" }}>🎰</span>
+            <div>
+              <h1 style={{ fontSize: "var(--text-xl)", fontWeight: 800 }}>Lucky Draw Stage</h1>
+              <p style={{ fontSize: "var(--text-xs)", color: "var(--text-secondary)" }}>ระบบสุ่มจับรางวัลสำหรับหน้าจอ LED</p>
+            </div>
+          </div>
+        </header>
+
+        <main className="container" style={{ padding: "var(--space-10) var(--space-6)" }}>
+          <div style={{ textAlign: "center", marginBottom: "var(--space-10)" }}>
+            <h2 style={{ fontSize: "var(--text-3xl)", fontWeight: 800, marginBottom: "var(--space-2)" }}>
+              เลือกงาน Event เพื่อเริ่มจับรางวัล
+            </h2>
+            <p style={{ color: "var(--text-secondary)", fontSize: "var(--text-base)" }}>
+              เลือกงานที่ต้องการเปิดเวที Lucky Draw สุ่มแจกของรางวัล
+            </p>
+          </div>
+
+          <div className="grid grid-3 gap-6">
+            {events.map((ev: any) => (
+              <div
+                key={ev.id}
+                className="glass-card"
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "space-between",
+                  cursor: "pointer",
+                  transition: "all var(--transition-fast)",
+                }}
+                onClick={() => setEventId(ev.id)}
+              >
+                <div>
+                  <div
+                    style={{
+                      height: "140px",
+                      borderRadius: "var(--radius-lg)",
+                      marginBottom: "var(--space-4)",
+                      background: ev.coverImage
+                        ? `url(${ev.coverImage}) center/cover no-repeat`
+                        : `linear-gradient(135deg, ${ev.settings?.themeColor || "#6366f1"} 0%, var(--bg-tertiary) 100%)`,
+                      position: "relative",
+                      overflow: "hidden",
+                    }}
+                  >
+                    {ev.settings?.isPinned && (
+                      <span
+                        className="badge badge--primary"
+                        style={{ position: "absolute", top: "8px", left: "8px" }}
+                      >
+                        📌 ตรึงไว้ด้านบน
+                      </span>
+                    )}
+                    <span
+                      className={`badge badge--${ev.status === "ACTIVE" ? "success" : ev.status === "PUBLISHED" ? "primary" : "neutral"}`}
+                      style={{ position: "absolute", top: "8px", right: "8px" }}
+                    >
+                      {getThaiStatusLabel(ev.status)}
+                    </span>
+                  </div>
+                  <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 700, marginBottom: "var(--space-2)" }}>
+                    {ev.name}
+                  </h3>
+                  <p style={{ fontSize: "var(--text-sm)", color: "var(--text-secondary)", marginBottom: "var(--space-4)", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                    {ev.description || "ไม่มีรายละเอียด"}
+                  </p>
+                </div>
+
+                <div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)", fontSize: "var(--text-xs)", color: "var(--text-muted)", marginBottom: "var(--space-4)" }}>
+                    <span>📅 {new Date(ev.startDate).toLocaleDateString("th-TH")}</span>
+                    <span>📍 {ev.venue || "-"}</span>
+                  </div>
+                  <button className="btn btn--primary" style={{ width: "100%", justifyContent: "center" }}>
+                    🎰 เข้าสู่เวที Lucky Draw →
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div style={{
       minHeight: "100vh",
@@ -567,11 +678,22 @@ export default function LuckyDrawPage() {
       {/* Controls */}
       <div className={`draw-controls ${!showControls ? "draw-controls--hidden" : ""}`}>
         <div className="flex gap-4" style={{ alignItems: "center" }}>
+          <button
+            className="btn btn--secondary btn--sm"
+            onClick={() => {
+              setEventId("");
+              setSelectedPrize(null);
+            }}
+            title="กลับไปหน้าเลือกงาน"
+          >
+            ← เลือกงานใหม่
+          </button>
+
           <select
             className="form-input"
             value={eventId}
             onChange={(e) => setEventId(e.target.value)}
-            style={{ width: "200px" }}
+            style={{ width: "180px" }}
           >
             {events.map((ev) => (
               <option key={ev.id} value={ev.id}>{ev.name}</option>
