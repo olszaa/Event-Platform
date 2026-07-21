@@ -1,4 +1,37 @@
-/* Mobile Responsive Adjustments for Web Registration */
+/* Mobile Responsive & Centered Layout Adjustments for Web Registration */
+
+html, body {
+  overflow-x: hidden;
+}
+
+.web-register-layout {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-x: hidden;
+}
+
+.hero-header {
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.web-register-container {
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 0 var(--space-6);
+  box-sizing: border-box;
+}
 
 .section-header-title {
   font-size: var(--text-xl);
@@ -6,6 +39,10 @@
 }
 
 @media (max-width: 640px) {
+  .web-register-container {
+    padding: 0 var(--space-4);
+  }
+
   .hero-header {
     padding: var(--space-12) var(--space-4) var(--space-6) !important;
   }

@@ -59,7 +59,7 @@ export default function HomePage() {
   }, [pinnedEvents.length]);
 
   return (
-    <div style={{ minHeight: "100vh" }}>
+    <div className="web-register-layout">
       {/* Hero */}
       <header
         className="hero-header"
@@ -115,7 +115,7 @@ export default function HomePage() {
       </header>
 
       {/* Main Content */}
-      <main className="container" style={{ paddingBottom: "var(--space-16)" }}>
+      <main className="web-register-container" style={{ paddingBottom: "var(--space-16)" }}>
         {loading ? (
           <div className="flex-center" style={{ padding: "var(--space-16)" }}>
             <span className="spinner spinner--lg" />
