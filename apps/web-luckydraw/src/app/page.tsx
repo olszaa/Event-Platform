@@ -571,15 +571,12 @@ export default function LuckyDrawPage() {
                       {selectedPrize.description}
                     </div>
                   )}
-                  <div style={{ marginTop: "var(--space-4)", display: "flex", gap: "var(--space-3)", alignItems: "center", flexWrap: "wrap", justifyContent: "center" }}>
+                  <div style={{ marginTop: "var(--space-4)", display: "flex", gap: "var(--space-3)", alignItems: "center" }}>
                     <span className="badge badge--primary" style={{ fontSize: "var(--text-base)", padding: "var(--space-2) var(--space-4)" }}>
                       🎁 รางวัลทั้งหมด: {selectedPrize.quantity}
                     </span>
                     <span className={`badge ${selectedPrize.remaining > 0 ? "badge--success" : "badge--error"}`} style={{ fontSize: "var(--text-base)", padding: "var(--space-2) var(--space-4)" }}>
                       คงเหลือ: {selectedPrize.remaining} / {selectedPrize.quantity}
-                    </span>
-                    <span className={`badge ${(selectedPrize.eligibleCount ?? selectedPrize.remaining) > 0 ? "badge--primary" : "badge--error"}`} style={{ fontSize: "var(--text-base)", padding: "var(--space-2) var(--space-4)", background: "var(--bg-tertiary)", borderColor: "var(--border-primary)" }}>
-                      👥 ผู้มีสิทธิ์: {selectedPrize.eligibleCount ?? selectedPrize.remaining} คน
                     </span>
                   </div>
                 </div>
