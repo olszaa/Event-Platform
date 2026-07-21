@@ -1,7 +1,10 @@
 import { PrismaClient } from "@prisma/client";
 
 const rawUrl = process.env.DATABASE_URL || "";
-const cleanUrl = rawUrl.trim().replace(/^["']|["']$/g, "");
+let cleanUrl = rawUrl.trim().replace(/^["']|["']$/g, "");
+if (cleanUrl && (cleanUrl.includes(":6543") || cleanUrl.includes("pooler.supabase.com")) && !cleanUrl.includes("pgbouncer=true")) {
+  cleanUrl += cleanUrl.includes("?") ? "&pgbouncer=true" : "?pgbouncer=true";
+}
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
