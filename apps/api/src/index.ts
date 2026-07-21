@@ -56,7 +56,16 @@ app.use("/api/draws", drawsRouter);
 app.use("/api/audit", verifyToken, auditRouter);
 app.use("/api/notifications", notificationsRouter);
 
-// Health check
+// Health check & Root info
+app.get("/", (_req, res) => {
+  res.json({
+    status: "online",
+    name: "Event Platform API",
+    version: "1.0.0",
+    health: "/api/health",
+  });
+});
+
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
