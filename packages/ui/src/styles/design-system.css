@@ -389,6 +389,14 @@ select.form-input {
   background-repeat: no-repeat;
   background-position: right var(--space-4) center;
   padding-right: var(--space-10);
+  cursor: pointer;
+}
+
+select.form-input option,
+select option {
+  background-color: var(--bg-secondary, #1e293b);
+  color: var(--text-primary, #f8fafc);
+  padding: var(--space-2) var(--space-4);
 }
 
 /* ===================================
