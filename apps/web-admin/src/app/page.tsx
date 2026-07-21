@@ -41,6 +41,18 @@ export default function AdminPage() {
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [userForm, setUserForm] = useState({ username: "", password: "", role: "ADMIN" });
 
+  // Prize Management State
+  const [isPrizeModalOpen, setIsPrizeModalOpen] = useState(false);
+  const [editingPrizeId, setEditingPrizeId] = useState<string | null>(null);
+  const [prizeForm, setPrizeForm] = useState({
+    name: "",
+    description: "",
+    quantity: 1,
+    sortOrder: 1,
+    mustCheckedIn: true,
+    onePerPerson: true,
+  });
+
   // New Event State
   const [isCreateEventOpen, setIsCreateEventOpen] = useState(false);
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
@@ -106,6 +118,105 @@ export default function AdminPage() {
       enableCheckinWhenPublic: ev.settings?.enableCheckinWhenPublic !== false,
     });
     setIsCreateEventOpen(true);
+  }
+
+  function openCreatePrize() {
+    setEditingPrizeId(null);
+    setPrizeForm({
+      name: "",
+      description: "",
+      quantity: 1,
+      sortOrder: (prizes.length || 0) + 1,
+      mustCheckedIn: true,
+      onePerPerson: true,
+    });
+    setIsPrizeModalOpen(true);
+  }
+
+  function openEditPrize(prize: any) {
+    setEditingPrizeId(prize.id);
+    const cond = prize.conditions || {};
+    setPrizeForm({
+      name: prize.name || "",
+      description: prize.description || "",
+      quantity: prize.quantity || 1,
+      sortOrder: prize.sortOrder || 1,
+      mustCheckedIn: cond.mustCheckedIn !== false,
+      onePerPerson: cond.onePerPerson !== false,
+    });
+    setIsPrizeModalOpen(true);
+  }
+
+  async function handleSavePrize(e: React.FormEvent) {
+    e.preventDefault();
+    if (!selectedEventId) {
+      alert("กรุณาเลือกงาน Event ก่อนเพิ่มรางวัล");
+      return;
+    }
+    setLoading(true);
+    try {
+      const payload = {
+        eventId: selectedEventId,
+        name: prizeForm.name,
+        description: prizeForm.description,
+        quantity: Number(prizeForm.quantity),
+        sortOrder: Number(prizeForm.sortOrder || 1),
+        conditions: {
+          mustCheckedIn: prizeForm.mustCheckedIn,
+          onePerPerson: prizeForm.onePerPerson,
+        },
+      };
+
+      if (editingPrizeId) {
+        const res = await fetch(`${API_URL}/api/prizes/${editingPrizeId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (data.success) {
+          setPrizes(prizes.map((p) => (p.id === editingPrizeId ? data.data : p)));
+          setIsPrizeModalOpen(false);
+        } else {
+          alert(`Error: ${data.error}`);
+        }
+      } else {
+        const res = await fetch(`${API_URL}/api/prizes`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (data.success) {
+          setPrizes([...prizes, data.data]);
+          setIsPrizeModalOpen(false);
+        } else {
+          alert(`Error: ${data.error}`);
+        }
+      }
+    } catch {
+      alert("ไม่สามารถบันทึกข้อมูลรางวัลได้");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleDeletePrize(id: string) {
+    if (!confirm("คุณต้องการลบรางวัลนี้ใช่หรือไม่?")) return;
+    try {
+      const res = await fetch(`${API_URL}/api/prizes/${id}`, {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPrizes(prizes.filter((p) => p.id !== id));
+      } else {
+        alert(`Error: ${data.error}`);
+      }
+    } catch {
+      alert("Failed to delete prize");
+    }
   }
 
   useEffect(() => {
@@ -385,6 +496,19 @@ export default function AdminPage() {
       <aside className={`admin-sidebar ${isSidebarOpen ? "admin-sidebar--open" : ""}`}>
         <div className="admin-sidebar__logo">⚡ Event Admin</div>
 
+        <nav className="admin-sidebar__nav" style={{ marginBottom: "var(--space-4)", flex: "none" }}>
+          <button
+            className={`admin-nav-item ${activeTab === "events" ? "admin-nav-item--active" : ""}`}
+            onClick={() => {
+              setActiveTab("events");
+              setIsSidebarOpen(false);
+            }}
+          >
+            <span>🎪</span>
+            จัดการงาน Event
+          </button>
+        </nav>
+
         {/* Event Selector */}
         <div style={{ marginBottom: "var(--space-6)" }}>
           <label className="form-label" style={{ marginBottom: "var(--space-2)", display: "block" }}>
@@ -403,7 +527,7 @@ export default function AdminPage() {
         </div>
 
         <nav className="admin-sidebar__nav">
-          {NAV_ITEMS.map((item) => (
+          {NAV_ITEMS.filter((item) => item.key !== "events").map((item) => (
             <button
               key={item.key}
               className={`admin-nav-item ${activeTab === item.key ? "admin-nav-item--active" : ""}`}
@@ -624,7 +748,7 @@ export default function AdminPage() {
                 <h1 className="admin-header__title">รางวัลทั้งหมด</h1>
                 <p className="admin-header__subtitle">{prizes.length} รางวัล</p>
               </div>
-              <button className="btn btn--primary">+ เพิ่มรางวัล</button>
+              <button className="btn btn--primary" onClick={openCreatePrize}>+ เพิ่มรางวัล</button>
             </div>
             <div className="grid grid-3 gap-6">
               {prizes.map((prize) => (
@@ -643,9 +767,29 @@ export default function AdminPage() {
                   >
                     🎁
                   </div>
-                  <h3 style={{ fontSize: "var(--text-base)", fontWeight: 700, marginBottom: "var(--space-2)" }}>
-                    {prize.name}
-                  </h3>
+                  <div className="flex-between" style={{ marginBottom: "var(--space-2)", alignItems: "center" }}>
+                    <h3 style={{ fontSize: "var(--text-base)", fontWeight: 700 }}>
+                      {prize.name}
+                    </h3>
+                    <div className="flex gap-2">
+                      <button
+                        className="btn btn--secondary btn--sm"
+                        style={{ padding: "0.2rem 0.4rem", fontSize: "0.75rem" }}
+                        onClick={() => openEditPrize(prize)}
+                        title="แก้ไขรางวัล"
+                      >
+                        ✏️
+                      </button>
+                      <button
+                        className="btn btn--danger btn--sm"
+                        style={{ padding: "0.2rem 0.4rem", fontSize: "0.75rem" }}
+                        onClick={() => handleDeletePrize(prize.id)}
+                        title="ลบรางวัล"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  </div>
                   <p style={{ fontSize: "var(--text-sm)", color: "var(--text-secondary)", marginBottom: "var(--space-3)" }}>
                     {prize.description || "-"}
                   </p>
@@ -1245,6 +1389,81 @@ export default function AdminPage() {
               <option value="ADMIN">ADMIN</option>
               <option value="SUPERADMIN">SUPERADMIN</option>
             </select>
+          </div>
+        </form>
+      </Modal>
+      {/* Create / Edit Prize Modal */}
+      <Modal
+        isOpen={isPrizeModalOpen}
+        onClose={() => setIsPrizeModalOpen(false)}
+        title={editingPrizeId ? "แก้ไขรางวัล" : "เพิ่มรางวัลใหม่"}
+      >
+        <form onSubmit={handleSavePrize} style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+          <Input
+            label="ชื่อรางวัล"
+            required
+            value={prizeForm.name}
+            onChange={(e) => setPrizeForm({ ...prizeForm, name: e.target.value })}
+            placeholder="เช่น iPhone 16 Pro Max 256GB"
+          />
+          <TextArea
+            label="รายละเอียด"
+            value={prizeForm.description}
+            onChange={(e) => setPrizeForm({ ...prizeForm, description: e.target.value })}
+            rows={2}
+            placeholder="คำอธิบายรางวัลเพิ่มเติม..."
+          />
+          <div className="grid grid-2 gap-4">
+            <Input
+              label="จำนวนรางวัล"
+              type="number"
+              min={1}
+              required
+              value={prizeForm.quantity}
+              onChange={(e) => setPrizeForm({ ...prizeForm, quantity: Number(e.target.value) })}
+            />
+            <Input
+              label="ลำดับการสุ่ม (Sort Order)"
+              type="number"
+              min={1}
+              value={prizeForm.sortOrder}
+              onChange={(e) => setPrizeForm({ ...prizeForm, sortOrder: Number(e.target.value) })}
+            />
+          </div>
+
+          <div style={{ borderTop: "1px solid var(--border-subtle)", paddingTop: "var(--space-3)" }}>
+            <h4 style={{ marginBottom: "var(--space-3)", fontSize: "var(--text-sm)", fontWeight: 600 }}>เงื่อนไขการรับรางวัล (Conditions)</h4>
+            <div className="form-group" style={{ marginBottom: "var(--space-2)" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={prizeForm.mustCheckedIn}
+                  onChange={(e) => setPrizeForm({ ...prizeForm, mustCheckedIn: e.target.checked })}
+                  style={{ width: "16px", height: "16px" }}
+                />
+                <span style={{ fontSize: "var(--text-sm)" }}>เฉพาะผู้เข้าร่วมที่เช็กอินแล้วเท่านั้น (Must Checked In)</span>
+              </label>
+            </div>
+            <div className="form-group">
+              <label style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={prizeForm.onePerPerson}
+                  onChange={(e) => setPrizeForm({ ...prizeForm, onePerPerson: e.target.checked })}
+                  style={{ width: "16px", height: "16px" }}
+                />
+                <span style={{ fontSize: "var(--text-sm)" }}>จำกัด 1 รางวัลต่อคน (One Prize Per Person)</span>
+              </label>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--space-3)", marginTop: "var(--space-4)" }}>
+            <Button variant="secondary" type="button" onClick={() => setIsPrizeModalOpen(false)}>
+              ยกเลิก
+            </Button>
+            <Button variant="primary" type="submit" disabled={loading}>
+              {loading ? "กำลังบันทึก..." : editingPrizeId ? "บันทึกการแก้ไข" : "สร้างรางวัล"}
+            </Button>
           </div>
         </form>
       </Modal>
