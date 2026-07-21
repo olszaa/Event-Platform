@@ -255,9 +255,17 @@ export default function LuckyDrawPage() {
     setSessionId("");
     if (spinTimerRef.current) clearInterval(spinTimerRef.current);
     // Refresh prizes
-    fetch(`${API_URL}/api/prizes?eventId=${eventId}`)
+    fetch(`${API_URL}/api/prizes?eventId=${eventId}`, { headers: getAuthHeaders() })
       .then((r) => r.json())
-      .then((res) => { if (res.success) setPrizes(res.data); });
+      .then((res) => {
+        if (res.success) {
+          setPrizes(res.data);
+          if (selectedPrize) {
+            const updated = res.data.find((p: any) => p.id === selectedPrize.id);
+            if (updated) setSelectedPrize(updated);
+          }
+        }
+      });
   }
 
   function toggleFullscreen() {
@@ -357,10 +365,72 @@ export default function LuckyDrawPage() {
         {/* IDLE State */}
         {drawState === "idle" && (
           <div className="draw-idle">
-            <div className="draw-idle__title">🎰 Lucky Draw</div>
-            <p style={{ fontSize: "var(--text-xl)", color: "var(--text-secondary)", position: "relative", zIndex: 1 }}>
-              {events.find((e) => e.id === eventId)?.name || "เลือกงานเพื่อเริ่มต้น"}
-            </p>
+            {!selectedPrize ? (
+              <>
+                <div className="draw-idle__title">🎰 Lucky Draw</div>
+                <p style={{ fontSize: "var(--text-xl)", color: "var(--text-secondary)", position: "relative", zIndex: 1 }}>
+                  {events.find((e) => e.id === eventId)?.name || "เลือกงานเพื่อเริ่มต้น"}
+                </p>
+                <div style={{ marginTop: "var(--space-4)", fontSize: "var(--text-md)", color: "var(--text-muted)" }}>
+                  👇 กรุณาเลือกรางวัลจากเมนูด้านล่างเพื่อเตรียมจับรางวัล
+                </div>
+              </>
+            ) : (
+              <div style={{ position: "relative", zIndex: 1, textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}>
+                <div className="draw-prize" style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                  {selectedPrize.image ? (
+                    <div
+                      style={{
+                        width: "220px",
+                        height: "160px",
+                        borderRadius: "var(--radius-xl)",
+                        overflow: "hidden",
+                        marginBottom: "var(--space-4)",
+                        boxShadow: "0 20px 40px rgba(0,0,0,0.6)",
+                        border: "2px solid rgba(255,255,255,0.3)",
+                        background: "var(--bg-tertiary)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <img
+                        src={selectedPrize.image}
+                        alt={selectedPrize.name}
+                        style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="draw-prize__icon" style={{ fontSize: "5rem" }}>🎁</div>
+                  )}
+                  <div className="draw-prize__name" style={{ fontSize: "var(--text-4xl)", fontWeight: 900 }}>{selectedPrize.name}</div>
+                  {selectedPrize.description && (
+                    <div style={{ color: "var(--text-secondary)", fontSize: "var(--text-lg)", marginTop: "var(--space-2)", maxWidth: "500px" }}>
+                      {selectedPrize.description}
+                    </div>
+                  )}
+                  <div style={{ marginTop: "var(--space-4)", display: "flex", gap: "var(--space-3)", alignItems: "center" }}>
+                    <span className="badge badge--primary" style={{ fontSize: "var(--text-base)", padding: "var(--space-2) var(--space-4)" }}>
+                      🎁 รางวัลทั้งหมด: {selectedPrize.quantity}
+                    </span>
+                    <span className={`badge ${selectedPrize.remaining > 0 ? "badge--success" : "badge--error"}`} style={{ fontSize: "var(--text-base)", padding: "var(--space-2) var(--space-4)" }}>
+                      คงเหลือ: {selectedPrize.remaining} / {selectedPrize.quantity}
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ marginTop: "var(--space-6)" }}>
+                  <button
+                    className="btn btn--primary btn--xl"
+                    disabled={selectedPrize.remaining <= 0}
+                    onClick={startDraw}
+                    style={{ fontSize: "var(--text-xl)", padding: "var(--space-4) var(--space-8)" }}
+                  >
+                    {selectedPrize.remaining > 0 ? "🎲 เริ่มสุ่มรางวัล →" : "❌ รางวัลแจกหมดแล้ว"}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -504,12 +574,12 @@ export default function LuckyDrawPage() {
               const prize = prizes.find((p) => p.id === e.target.value) || null;
               setSelectedPrize(prize);
             }}
-            style={{ width: "250px" }}
+            style={{ width: "280px" }}
           >
             <option value="">-- เลือกรางวัล --</option>
             {prizes.map((p) => (
               <option key={p.id} value={p.id} disabled={p.remaining <= 0}>
-                {p.name} (เหลือ {p.remaining}/{p.quantity})
+                {p.name} (เหลือ {p.remaining}/{p.quantity} รางวัล)
               </option>
             ))}
           </select>
