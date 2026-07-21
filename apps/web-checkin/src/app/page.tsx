@@ -192,8 +192,10 @@ export default function CheckinPage() {
     let pointId = selectedPoint;
     if (!pointId && checkpoints.length > 0) {
       const activePoint = checkpoints.find((cp) => cp.isActive !== false) || checkpoints[0];
-      pointId = activePoint.id;
-      setSelectedPoint(pointId);
+      if (activePoint) {
+        pointId = activePoint.id;
+        setSelectedPoint(pointId);
+      }
     }
 
     try {
@@ -235,8 +237,10 @@ export default function CheckinPage() {
     let pointId = selectedPoint;
     if (!pointId && checkpoints.length > 0) {
       const activePoint = checkpoints.find((cp) => cp.isActive !== false) || checkpoints[0];
-      pointId = activePoint.id;
-      setSelectedPoint(pointId);
+      if (activePoint) {
+        pointId = activePoint.id;
+        setSelectedPoint(pointId);
+      }
     }
 
     try {
