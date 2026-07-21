@@ -82,6 +82,7 @@ export default function LuckyDrawPage() {
   const [allWinners, setAllWinners] = useState<Winner[]>([]);
   const [showSidebar, setShowSidebar] = useState(false);
   const [showControls, setShowControls] = useState(true);
+  const [drawCountInput, setDrawCountInput] = useState<number>(1);
   const [confetti, setConfetti] = useState<{ id: number; color: string; left: string; delay: string }[]>([]);
 
   const socketRef = useRef<Socket | null>(null);
@@ -239,8 +240,9 @@ export default function LuckyDrawPage() {
     setTimeout(() => setConfetti([]), 5000);
   }
 
-  async function startDraw() {
+  async function startDraw(overrideCount?: number) {
     if (!selectedPrize || !eventId) return;
+    const count = overrideCount || drawCountInput || 1;
 
     setDrawState("selecting");
 
@@ -249,7 +251,7 @@ export default function LuckyDrawPage() {
       const res = await fetch(`${API_URL}/api/draws/start`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-        body: JSON.stringify({ eventId, prizeId: selectedPrize.id, drawCount: 1 }),
+        body: JSON.stringify({ eventId, prizeId: selectedPrize.id, drawCount: count }),
       });
       const data = await res.json();
       if (!data.success) {
@@ -265,7 +267,7 @@ export default function LuckyDrawPage() {
       const spinRes = await fetch(`${API_URL}/api/draws/${data.data.id}/spin`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ count: 1 }),
+        body: JSON.stringify({ count }),
       });
       const spinData = await spinRes.json();
 
@@ -651,20 +653,20 @@ export default function LuckyDrawPage() {
 
         {/* WINNER State */}
         {drawState === "winner" && winners.length > 0 && (
-          <div className="draw-winner" style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <div style={{ fontSize: "5rem", marginBottom: "var(--space-2)" }}>🏆</div>
-            <div style={{ fontSize: "var(--text-xl)", color: "var(--text-muted)", marginBottom: "var(--space-3)" }}>
-              ยินดีด้วย!
+          <div className="draw-winner" style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", maxWidth: "1000px", padding: "0 var(--space-6)" }}>
+            <div style={{ fontSize: "4rem", marginBottom: "var(--space-1)" }}>🏆</div>
+            <div style={{ fontSize: "var(--text-2xl)", fontWeight: 800, color: "var(--color-accent-light)", marginBottom: "var(--space-4)" }}>
+              ขอแสดงความยินดีกับผู้โชคดี ({winners.length} ท่าน)!
             </div>
             {selectedPrize?.image && (
               <div
                 style={{
-                  width: "160px",
-                  height: "120px",
-                  borderRadius: "var(--radius-xl)",
+                  width: "140px",
+                  height: "100px",
+                  borderRadius: "var(--radius-lg)",
                   overflow: "hidden",
                   marginBottom: "var(--space-4)",
-                  boxShadow: "0 0 30px rgba(245, 158, 11, 0.4)",
+                  boxShadow: "0 0 25px rgba(245, 158, 11, 0.4)",
                   border: "2px solid var(--color-accent-light)",
                   background: "var(--bg-tertiary)",
                 }}
@@ -676,26 +678,70 @@ export default function LuckyDrawPage() {
                 />
               </div>
             )}
-            {winners.map((w, i) => (
-              <div key={i}>
-                <div className="draw-winner__name">{w.fullName}</div>
-                {w.department && <div className="draw-winner__dept">{w.department}</div>}
-                <div className="draw-winner__prize">
-                  🎁 {w.prizeName}
-                </div>
-              </div>
-            ))}
 
-            <div style={{ marginTop: "var(--space-8)", display: "flex", gap: "var(--space-3)", justifyContent: "center" }}>
+            {/* Single Winner Display */}
+            {winners.length === 1 ? (
+              <div style={{ textAlign: "center" }}>
+                <div className="draw-winner__name">{winners[0]!.fullName}</div>
+                {winners[0]!.department && <div className="draw-winner__dept">{winners[0]!.department}</div>}
+                <div className="draw-winner__prize">🎁 {winners[0]!.prizeName}</div>
+              </div>
+            ) : (
+              /* Multiple Winners Grid Display */
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: winners.length <= 4 ? "repeat(auto-fit, minmax(220px, 1fr))" : "repeat(auto-fit, minmax(180px, 1fr))",
+                  gap: "var(--space-4)",
+                  width: "100%",
+                  maxHeight: "60vh",
+                  overflowY: "auto",
+                  padding: "var(--space-2)",
+                }}
+              >
+                {winners.map((w, i) => (
+                  <div
+                    key={w.id || i}
+                    style={{
+                      background: "rgba(30, 41, 59, 0.8)",
+                      border: "1px solid var(--color-accent-light)",
+                      borderRadius: "var(--radius-xl)",
+                      padding: "var(--space-4)",
+                      textAlign: "center",
+                      boxShadow: "0 10px 25px rgba(0,0,0,0.4)",
+                    }}
+                  >
+                    <div style={{ fontSize: "var(--text-xs)", color: "var(--color-accent-light)", fontWeight: 700, marginBottom: "var(--space-1)" }}>
+                      ลำดับที่ {i + 1}
+                    </div>
+                    <div style={{ fontSize: "var(--text-xl)", fontWeight: 800, color: "#fff", marginBottom: "var(--space-1)" }}>
+                      {w.fullName}
+                    </div>
+                    {w.department && (
+                      <div style={{ fontSize: "var(--text-sm)", color: "var(--text-secondary)", marginBottom: "var(--space-2)" }}>
+                        {w.department}
+                      </div>
+                    )}
+                    <div style={{ fontSize: "var(--text-xs)", color: "var(--color-primary-light)" }}>
+                      🎁 {w.prizeName}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div style={{ marginTop: "var(--space-6)", display: "flex", gap: "var(--space-3)", justifyContent: "center" }}>
               <button className="btn btn--primary btn--xl" onClick={resetDraw}>
                 🎰 จับรางวัลต่อ
               </button>
-              <button
-                className="btn btn--secondary btn--lg"
-                onClick={() => winners[0] && handleRedraw(winners[0].id)}
-              >
-                🔄 Re-draw
-              </button>
+              {winners.length === 1 && (
+                <button
+                  className="btn btn--secondary btn--lg"
+                  onClick={() => handleRedraw(winners[0]!.id)}
+                >
+                  🔄 Re-draw
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -732,12 +778,38 @@ export default function LuckyDrawPage() {
             ))}
           </select>
 
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+            <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>จำนวนผู้ชนะ:</span>
+            <input
+              type="number"
+              min={1}
+              max={selectedPrize ? Math.max(1, selectedPrize.remaining) : 1}
+              value={drawCountInput}
+              onChange={(e) => {
+                const val = Math.max(1, parseInt(e.target.value) || 1);
+                const max = selectedPrize ? selectedPrize.remaining : val;
+                setDrawCountInput(Math.min(val, max));
+              }}
+              style={{
+                width: "60px",
+                padding: "0.4rem 0.5rem",
+                borderRadius: "var(--radius-md)",
+                border: "1px solid var(--border-default)",
+                background: "var(--bg-input)",
+                color: "var(--text-primary)",
+                fontSize: "var(--text-sm)",
+                textAlign: "center",
+              }}
+            />
+            <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>คน</span>
+          </div>
+
           <button
             className="btn btn--primary btn--lg"
             disabled={!selectedPrize || selectedPrize.remaining <= 0 || drawState !== "idle"}
-            onClick={startDraw}
+            onClick={() => startDraw(drawCountInput)}
           >
-            🎲 สุ่มรางวัล
+            🎲 สุ่ม {drawCountInput} รางวัล
           </button>
         </div>
 
