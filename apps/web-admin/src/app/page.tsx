@@ -5,12 +5,13 @@ import { Modal, Input, TextArea, Button } from "@event-platform/ui";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
-type Tab = "dashboard" | "events" | "registrations" | "prizes" | "draws" | "audit" | "users";
+type Tab = "dashboard" | "events" | "registrations" | "prizes" | "checkinPoints" | "draws" | "audit" | "users";
 
 const NAV_ITEMS: { key: Tab; icon: string; label: string }[] = [
   { key: "dashboard", icon: "📊", label: "Dashboard" },
   { key: "events", icon: "🎪", label: "จัดการงาน" },
   { key: "registrations", icon: "📋", label: "ผู้ลงทะเบียน" },
+  { key: "checkinPoints", icon: "🚪", label: "ทางเข้า / จุดเช็กอิน" },
   { key: "prizes", icon: "🎁", label: "รางวัล" },
   { key: "draws", icon: "🎰", label: "ผลจับรางวัล" },
   { key: "audit", icon: "📜", label: "Audit Log" },
@@ -40,6 +41,17 @@ export default function AdminPage() {
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [userForm, setUserForm] = useState({ username: "", password: "", role: "ADMIN" });
+
+  // Checkin Points Management State
+  const [checkinPoints, setCheckinPoints] = useState<any[]>([]);
+  const [isPointModalOpen, setIsPointModalOpen] = useState(false);
+  const [editingPointId, setEditingPointId] = useState<string | null>(null);
+  const [pointForm, setPointForm] = useState({
+    name: "",
+    location: "",
+    isActive: true,
+    sortOrder: 1,
+  });
 
   // Prize Management State
   const [isPrizeModalOpen, setIsPrizeModalOpen] = useState(false);
@@ -223,6 +235,112 @@ export default function AdminPage() {
     }
   }
 
+  function openCreatePoint() {
+    setEditingPointId(null);
+    setPointForm({
+      name: "",
+      location: "",
+      isActive: true,
+      sortOrder: (checkinPoints.length || 0) + 1,
+    });
+    setIsPointModalOpen(true);
+  }
+
+  function openEditPoint(point: any) {
+    setEditingPointId(point.id);
+    setPointForm({
+      name: point.name || "",
+      location: point.location || "",
+      isActive: point.isActive !== false,
+      sortOrder: point.sortOrder || 1,
+    });
+    setIsPointModalOpen(true);
+  }
+
+  async function handleSavePoint(e: React.FormEvent) {
+    e.preventDefault();
+    if (!selectedEventId) {
+      alert("กรุณาเลือกงาน Event ก่อนเพิ่มทางเข้างาน");
+      return;
+    }
+    setLoading(true);
+    try {
+      const payload = {
+        eventId: selectedEventId,
+        name: pointForm.name,
+        location: pointForm.location,
+        isActive: pointForm.isActive,
+        sortOrder: Number(pointForm.sortOrder || 1),
+      };
+
+      if (editingPointId) {
+        const res = await fetch(`${API_URL}/api/checkin/points/${editingPointId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (data.success) {
+          setCheckinPoints(checkinPoints.map((p) => (p.id === editingPointId ? data.data : p)));
+          setIsPointModalOpen(false);
+        } else {
+          alert(`Error: ${data.error}`);
+        }
+      } else {
+        const res = await fetch(`${API_URL}/api/checkin/points`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (data.success) {
+          setCheckinPoints([...checkinPoints, data.data]);
+          setIsPointModalOpen(false);
+        } else {
+          alert(`Error: ${data.error}`);
+        }
+      }
+    } catch {
+      alert("ไม่สามารถบันทึกข้อมูลทางเข้างานได้");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleDeletePoint(id: string) {
+    if (!confirm("คุณต้องการลบทางเข้างาน/จุดเช็กอินนี้ใช่หรือไม่?")) return;
+    try {
+      const res = await fetch(`${API_URL}/api/checkin/points/${id}`, {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setCheckinPoints(checkinPoints.filter((p) => p.id !== id));
+      } else {
+        alert(`Error: ${data.error}`);
+      }
+    } catch {
+      alert("Failed to delete point");
+    }
+  }
+
+  async function handleTogglePointActive(point: any) {
+    try {
+      const res = await fetch(`${API_URL}/api/checkin/points/${point.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+        body: JSON.stringify({ isActive: !point.isActive }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setCheckinPoints(checkinPoints.map((p) => (p.id === point.id ? { ...p, isActive: !point.isActive } : p)));
+      }
+    } catch {
+      alert("Failed to update status");
+    }
+  }
+
   useEffect(() => {
     const savedToken = localStorage.getItem("admin_token");
     const savedRole = localStorage.getItem("admin_role");
@@ -317,6 +435,14 @@ export default function AdminPage() {
         fetch(`${API_URL}/api/prizes?eventId=${selectedEventId}`, { headers: getAuthHeaders() })
           .then((r) => r.json())
           .then((res) => { if (res.success) setPrizes(res.data); })
+      );
+    }
+
+    if (activeTab === "checkinPoints" || activeTab === "dashboard") {
+      loads.push(
+        fetch(`${API_URL}/api/checkin/points?eventId=${selectedEventId}`, { headers: getAuthHeaders() })
+          .then((r) => r.json())
+          .then((res) => { if (res.success) setCheckinPoints(res.data); })
       );
     }
 
@@ -820,6 +946,89 @@ export default function AdminPage() {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Check-in Points Management */}
+        {activeTab === "checkinPoints" && (
+          <div>
+            <div className="admin-header">
+              <div>
+                <h1 className="admin-header__title">ทางเข้างาน / จุดเช็กอิน (Check-in Entrances)</h1>
+                <p className="admin-header__subtitle">
+                  {checkinPoints.length} ทางเข้า สำหรับงาน {events.find((e) => e.id === selectedEventId)?.name || ""}
+                </p>
+              </div>
+              <Button variant="primary" onClick={openCreatePoint}>
+                + เพิ่มทางเข้างาน / จุดเช็กอิน
+              </Button>
+            </div>
+            {checkinPoints.length === 0 ? (
+              <div className="glass-card flex-center" style={{ padding: "var(--space-16)", textAlign: "center" }}>
+                <div>
+                  <div style={{ fontSize: "3rem", marginBottom: "var(--space-4)" }}>🚪</div>
+                  <h3 style={{ color: "var(--text-muted)" }}>ยังไม่มีทางเข้างาน/จุดเช็กอิน</h3>
+                  <p style={{ color: "var(--text-muted)", fontSize: "var(--text-sm)", marginBottom: "var(--space-4)" }}>
+                    คลิก "+ เพิ่มทางเข้างาน / จุดเช็กอิน" เพื่อสร้างทางเข้าแรก
+                  </p>
+                  <Button variant="primary" onClick={openCreatePoint}>
+                    + เพิ่มทางเข้างาน / จุดเช็กอิน
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-3 gap-6">
+                {checkinPoints.map((point) => (
+                  <div key={point.id} className="glass-card" style={{ display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                    <div>
+                      <div className="flex-between" style={{ marginBottom: "var(--space-3)", alignItems: "center" }}>
+                        <div className="flex gap-2 items-center">
+                          <span style={{ fontSize: "1.8rem" }}>🚪</span>
+                          <div>
+                            <h3 style={{ fontSize: "var(--text-base)", fontWeight: 700 }}>{point.name}</h3>
+                            <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
+                              📍 {point.location || "ไม่ได้ระบุสถานที่"}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            className="btn btn--secondary btn--sm"
+                            style={{ padding: "0.2rem 0.4rem", fontSize: "0.75rem" }}
+                            onClick={() => openEditPoint(point)}
+                            title="แก้ไข"
+                          >
+                            ✏️
+                          </button>
+                          <button
+                            className="btn btn--danger btn--sm"
+                            style={{ padding: "0.2rem 0.4rem", fontSize: "0.75rem" }}
+                            onClick={() => handleDeletePoint(point.id)}
+                            title="ลบ"
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ marginTop: "var(--space-4)", paddingTop: "var(--space-3)", borderTop: "1px solid var(--border-subtle)" }} className="flex-between">
+                      <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
+                        👥 เช็กอินแล้ว {point._count?.checkins || 0} คน
+                      </span>
+                      <button
+                        className={`badge ${point.isActive ? "badge--success" : "badge--neutral"}`}
+                        onClick={() => handleTogglePointActive(point)}
+                        style={{ cursor: "pointer", border: "none" }}
+                        title="คลิกเพื่อสลับสถานะ"
+                      >
+                        {point.isActive ? "🟢 เปิดใช้งาน" : "🔴 ปิดใช้งาน"}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -1511,6 +1720,51 @@ export default function AdminPage() {
             <Button variant="primary" type="submit" disabled={loading}>
               {loading ? "กำลังบันทึก..." : editingPrizeId ? "บันทึกการแก้ไข" : "สร้างรางวัล"}
             </Button>
+          </div>
+        </form>
+      </Modal>
+      {/* Create / Edit CheckinPoint Modal */}
+      <Modal
+        isOpen={isPointModalOpen}
+        onClose={() => setIsPointModalOpen(false)}
+        title={editingPointId ? "แก้ไขทางเข้างาน / จุดเช็กอิน" : "เพิ่มทางเข้างาน / จุดเช็กอินใหม่"}
+        footer={
+          <div style={{ display: "flex", gap: "var(--space-3)", justifyContent: "flex-end" }}>
+            <Button variant="ghost" onClick={() => setIsPointModalOpen(false)}>ยกเลิก</Button>
+            <Button variant="primary" type="submit" form="point-form">บันทึก</Button>
+          </div>
+        }
+      >
+        <form id="point-form" onSubmit={handleSavePoint} style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+          <Input
+            label="ชื่อทางเข้างาน / จุดเช็กอิน"
+            required
+            value={pointForm.name}
+            onChange={(e) => setPointForm({ ...pointForm, name: e.target.value })}
+            placeholder="เช่น ทางเข้าประตู 1 (Main Gate), ประตู VIP, จุดเช็กอิน Hall A"
+          />
+          <Input
+            label="สถานที่ตั้ง / รายละเอียดเพิ่มเติม"
+            value={pointForm.location}
+            onChange={(e) => setPointForm({ ...pointForm, location: e.target.value })}
+            placeholder="เช่น บริเวณหน้าโถงทางเข้าฝั่งทิศตะวันออก"
+          />
+          <Input
+            label="ลำดับการจัดเรียง (Sort Order)"
+            type="number"
+            value={pointForm.sortOrder}
+            onChange={(e) => setPointForm({ ...pointForm, sortOrder: Number(e.target.value) })}
+          />
+          <div className="form-group">
+            <label style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={pointForm.isActive}
+                onChange={(e) => setPointForm({ ...pointForm, isActive: e.target.checked })}
+                style={{ width: "16px", height: "16px" }}
+              />
+              <span style={{ fontSize: "var(--text-sm)", fontWeight: 600 }}>🟢 เปิดใช้งานทางเข้างานนี้</span>
+            </label>
           </div>
         </form>
       </Modal>
