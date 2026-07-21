@@ -577,17 +577,6 @@ export default function LuckyDrawPage() {
                     </span>
                   </div>
                 </div>
-
-                <div style={{ marginTop: "var(--space-6)" }}>
-                  <button
-                    className="btn btn--primary btn--xl"
-                    disabled={selectedPrize.remaining <= 0}
-                    onClick={startDraw}
-                    style={{ fontSize: "var(--text-xl)", padding: "var(--space-4) var(--space-8)" }}
-                  >
-                    {selectedPrize.remaining > 0 ? "🎲 เริ่มสุ่มรางวัล →" : "❌ รางวัลแจกหมดแล้ว"}
-                  </button>
-                </div>
               </div>
             )}
           </div>
