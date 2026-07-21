@@ -13,6 +13,7 @@ interface Prize {
   id: string;
   name: string;
   description?: string;
+  image?: string;
   quantity: number;
   awarded: number;
   remaining: number;
@@ -367,8 +368,32 @@ export default function LuckyDrawPage() {
         {(drawState === "spinning" || drawState === "selecting") && (
           <div style={{ position: "relative", zIndex: 1, textAlign: "center" }}>
             {selectedPrize && (
-              <div className="draw-prize">
-                <div className="draw-prize__icon">🎁</div>
+              <div className="draw-prize" style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                {selectedPrize.image ? (
+                  <div
+                    style={{
+                      width: "180px",
+                      height: "140px",
+                      borderRadius: "var(--radius-xl)",
+                      overflow: "hidden",
+                      marginBottom: "var(--space-4)",
+                      boxShadow: "0 15px 35px rgba(0,0,0,0.5)",
+                      border: "2px solid rgba(255,255,255,0.2)",
+                      background: "var(--bg-tertiary)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <img
+                      src={selectedPrize.image}
+                      alt={selectedPrize.name}
+                      style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                    />
+                  </div>
+                ) : (
+                  <div className="draw-prize__icon">🎁</div>
+                )}
                 <div className="draw-prize__name">{selectedPrize.name}</div>
                 <div style={{ color: "var(--text-secondary)", fontSize: "var(--text-lg)" }}>
                   {selectedPrize.description}
@@ -408,11 +433,31 @@ export default function LuckyDrawPage() {
 
         {/* WINNER State */}
         {drawState === "winner" && winners.length > 0 && (
-          <div className="draw-winner">
-            <div style={{ fontSize: "5rem", marginBottom: "var(--space-4)" }}>🏆</div>
+          <div className="draw-winner" style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <div style={{ fontSize: "5rem", marginBottom: "var(--space-2)" }}>🏆</div>
             <div style={{ fontSize: "var(--text-xl)", color: "var(--text-muted)", marginBottom: "var(--space-3)" }}>
               ยินดีด้วย!
             </div>
+            {selectedPrize?.image && (
+              <div
+                style={{
+                  width: "160px",
+                  height: "120px",
+                  borderRadius: "var(--radius-xl)",
+                  overflow: "hidden",
+                  marginBottom: "var(--space-4)",
+                  boxShadow: "0 0 30px rgba(245, 158, 11, 0.4)",
+                  border: "2px solid var(--color-accent-light)",
+                  background: "var(--bg-tertiary)",
+                }}
+              >
+                <img
+                  src={selectedPrize.image}
+                  alt={selectedPrize.name}
+                  style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                />
+              </div>
+            )}
             {winners.map((w, i) => (
               <div key={i}>
                 <div className="draw-winner__name">{w.fullName}</div>

@@ -47,6 +47,7 @@ export default function AdminPage() {
   const [prizeForm, setPrizeForm] = useState({
     name: "",
     description: "",
+    image: "",
     quantity: 1,
     sortOrder: 1,
     mustCheckedIn: true,
@@ -125,6 +126,7 @@ export default function AdminPage() {
     setPrizeForm({
       name: "",
       description: "",
+      image: "",
       quantity: 1,
       sortOrder: (prizes.length || 0) + 1,
       mustCheckedIn: true,
@@ -139,6 +141,7 @@ export default function AdminPage() {
     setPrizeForm({
       name: prize.name || "",
       description: prize.description || "",
+      image: prize.image || "",
       quantity: prize.quantity || 1,
       sortOrder: prize.sortOrder || 1,
       mustCheckedIn: cond.mustCheckedIn !== false,
@@ -159,6 +162,7 @@ export default function AdminPage() {
         eventId: selectedEventId,
         name: prizeForm.name,
         description: prizeForm.description,
+        image: prizeForm.image,
         quantity: Number(prizeForm.quantity),
         sortOrder: Number(prizeForm.sortOrder || 1),
         conditions: {
@@ -755,17 +759,17 @@ export default function AdminPage() {
                 <div key={prize.id} className="glass-card">
                   <div
                     style={{
-                      height: "100px",
+                      height: "140px",
                       borderRadius: "var(--radius-lg)",
                       marginBottom: "var(--space-4)",
-                      background: "linear-gradient(135deg, var(--bg-tertiary) 0%, rgba(245,158,11,0.2) 100%)",
+                      background: prize.image ? `url(${prize.image}) center/cover no-repeat` : "linear-gradient(135deg, var(--bg-tertiary) 0%, rgba(245,158,11,0.2) 100%)",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                       fontSize: "2.5rem",
                     }}
                   >
-                    🎁
+                    {!prize.image && "🎁"}
                   </div>
                   <div className="flex-between" style={{ marginBottom: "var(--space-2)", alignItems: "center" }}>
                     <h3 style={{ fontSize: "var(--text-base)", fontWeight: 700 }}>
@@ -1413,6 +1417,49 @@ export default function AdminPage() {
             rows={2}
             placeholder="คำอธิบายรางวัลเพิ่มเติม..."
           />
+
+          <div className="form-group" style={{ marginBottom: "var(--space-2)" }}>
+            <label className="form-label" style={{ marginBottom: "var(--space-1)", display: "block" }}>
+              รูปภาพรางวัล (Prize Image)
+            </label>
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+              <input
+                type="file"
+                accept="image/*"
+                className="form-input"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                      setPrizeForm((prev) => ({ ...prev, image: reader.result as string }));
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }}
+              />
+              <div style={{ fontSize: "0.75rem", color: "var(--text-tertiary)" }}>
+                หรือใส่ลิงก์รูปภาพ (Image URL):
+              </div>
+              <Input
+                value={prizeForm.image}
+                onChange={(e) => setPrizeForm({ ...prizeForm, image: e.target.value })}
+                placeholder="https://example.com/prize.png หรือเลือกไฟล์ด้านบน"
+              />
+              {prizeForm.image && (
+                <div style={{ position: "relative", width: "100%", height: "120px", borderRadius: "var(--radius-md)", overflow: "hidden", background: "var(--bg-tertiary)", marginTop: "var(--space-1)" }}>
+                  <img src={prizeForm.image} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                  <button
+                    type="button"
+                    onClick={() => setPrizeForm({ ...prizeForm, image: "" })}
+                    style={{ position: "absolute", top: "4px", right: "4px", background: "rgba(0,0,0,0.6)", color: "#fff", border: "none", borderRadius: "50%", width: "22px", height: "22px", cursor: "pointer", fontSize: "12px" }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
           <div className="grid grid-2 gap-4">
             <Input
               label="จำนวนรางวัล"
