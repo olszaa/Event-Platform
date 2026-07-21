@@ -51,18 +51,29 @@ export default function LuckyDrawPage() {
 
   const [eventId, setEventIdRaw] = useState("");
 
+  const [events, setEvents] = useState<Event[]>([]);
+  const [prizes, setPrizes] = useState<Prize[]>([]);
+  const [selectedPrize, setSelectedPrizeRaw] = useState<Prize | null>(null);
+
+  const setSelectedPrize = (prize: Prize | null) => {
+    setSelectedPrizeRaw(prize);
+    if (prize) {
+      localStorage.setItem("luckydraw_prize_id", prize.id);
+    } else {
+      localStorage.removeItem("luckydraw_prize_id");
+    }
+  };
+
   const setEventId = (id: string) => {
     setEventIdRaw(id);
+    setSelectedPrize(null);
     if (id) {
       localStorage.setItem("luckydraw_event_id", id);
     } else {
       localStorage.removeItem("luckydraw_event_id");
+      localStorage.removeItem("luckydraw_prize_id");
     }
   };
-
-  const [events, setEvents] = useState<Event[]>([]);
-  const [prizes, setPrizes] = useState<Prize[]>([]);
-  const [selectedPrize, setSelectedPrize] = useState<Prize | null>(null);
   const [drawState, setDrawState] = useState<DrawState>("idle");
   const [sessionId, setSessionId] = useState("");
   const [spinNames, setSpinNames] = useState<string[]>([]);
@@ -133,7 +144,18 @@ export default function LuckyDrawPage() {
 
     fetch(`${API_URL}/api/prizes?eventId=${eventId}`, { headers: getAuthHeaders() })
       .then((r) => r.json())
-      .then((res) => { if (res.success) setPrizes(res.data); });
+      .then((res) => {
+        if (res.success) {
+          setPrizes(res.data);
+          const savedPrizeId = localStorage.getItem("luckydraw_prize_id");
+          const foundSaved = res.data.find((p: any) => p.id === savedPrizeId);
+          if (foundSaved) {
+            setSelectedPrizeRaw(foundSaved);
+          } else if (res.data.length > 0) {
+            setSelectedPrizeRaw(res.data[0]);
+          }
+        }
+      });
 
     // Load existing winners
     fetch(`${API_URL}/api/draws/winners/all?eventId=${eventId}`, { headers: getAuthHeaders() })
@@ -506,7 +528,7 @@ export default function LuckyDrawPage() {
               <>
                 <div className="draw-idle__title">🎰 Lucky Draw</div>
                 <p style={{ fontSize: "var(--text-xl)", color: "var(--text-secondary)", position: "relative", zIndex: 1 }}>
-                  {events.find((e) => e.id === eventId)?.name || "เลือกงานเพื่อเริ่มต้น"}
+                  {selectedEvent?.name || "เลือกงานเพื่อเริ่มต้น"}
                 </p>
                 <div style={{ marginTop: "var(--space-4)", fontSize: "var(--text-md)", color: "var(--text-muted)" }}>
                   👇 กรุณาเลือกรางวัลจากเมนูด้านล่างเพื่อเตรียมจับรางวัล
