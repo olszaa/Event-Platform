@@ -347,7 +347,12 @@ export default function LuckyDrawPage() {
       )}
 
       {/* Main Stage */}
-      <div className="draw-stage">
+      <div
+        className={`draw-stage ${bgUrl ? "draw-stage--custom-bg" : ""}`}
+        style={{
+          background: bgUrl ? `url(${bgUrl}) center/cover fixed no-repeat` : undefined,
+        }}
+      >
         {/* IDLE State */}
         {drawState === "idle" && (
           <div className="draw-idle">

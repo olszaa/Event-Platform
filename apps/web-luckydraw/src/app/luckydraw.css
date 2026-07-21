@@ -11,6 +11,14 @@
   overflow: hidden;
 }
 
+.draw-stage--custom-bg {
+  background-color: transparent !important;
+}
+
+.draw-stage--custom-bg::before {
+  opacity: 0.3;
+}
+
 /* Animated background */
 .draw-stage::before {
   content: '';
