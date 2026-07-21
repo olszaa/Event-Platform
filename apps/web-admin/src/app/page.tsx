@@ -137,6 +137,15 @@ export default function AdminPage() {
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem("admin_token");
+    localStorage.removeItem("admin_role");
+    localStorage.removeItem("admin_id");
+    setToken(null);
+    setCurrentUserRole(null);
+    setCurrentUserId(null);
+  };
+
   const getAuthHeaders = (): Record<string, string> => {
     return token ? { Authorization: `Bearer ${token}` } : {};
   };
@@ -374,8 +383,15 @@ export default function AdminPage() {
           ))}
         </nav>
 
-        <div style={{ marginTop: "auto", paddingTop: "var(--space-6)", borderTop: "1px solid var(--border-subtle)" }}>
-          <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
+        <div style={{ marginTop: "auto", paddingTop: "var(--space-6)", borderTop: "1px solid var(--border-subtle)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+          <button
+            className="btn btn--secondary"
+            style={{ width: "100%", fontSize: "var(--text-xs)", display: "flex", alignItems: "center", justifyContent: "center", gap: "var(--space-2)" }}
+            onClick={handleLogout}
+          >
+            🚪 ออกจากระบบ
+          </button>
+          <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", textAlign: "center" }}>
             Event Platform v0.1
           </div>
         </div>
@@ -742,18 +758,23 @@ export default function AdminPage() {
                 <h1 className="admin-header__title">จัดการผู้ใช้ (SuperAdmin)</h1>
                 <p className="admin-header__subtitle">จัดการบัญชีผู้ดูแลระบบ</p>
               </div>
-              {currentUserRole === "SUPERADMIN" && (
-                <Button 
-                  variant="primary" 
-                  onClick={() => {
-                    setEditingUserId(null);
-                    setUserForm({ username: "", password: "", role: "ADMIN" });
-                    setIsUserModalOpen(true);
-                  }}
-                >
-                  + เพิ่มผู้ใช้ใหม่
+              <div style={{ display: "flex", gap: "var(--space-3)" }}>
+                {currentUserRole === "SUPERADMIN" && (
+                  <Button 
+                    variant="primary" 
+                    onClick={() => {
+                      setEditingUserId(null);
+                      setUserForm({ username: "", password: "", role: "ADMIN" });
+                      setIsUserModalOpen(true);
+                    }}
+                  >
+                    + เพิ่มผู้ใช้ใหม่
+                  </Button>
+                )}
+                <Button variant="danger" onClick={handleLogout}>
+                  🚪 ออกจากระบบ
                 </Button>
-              )}
+              </div>
             </div>
             <div className="table-container">
               <table className="table">
