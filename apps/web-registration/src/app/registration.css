@@ -1,0 +1,88 @@
+/* Mobile Responsive Adjustments for Web Registration */
+
+.section-header-title {
+  font-size: var(--text-xl);
+  font-weight: 800;
+}
+
+@media (max-width: 640px) {
+  .hero-header {
+    padding: var(--space-12) var(--space-4) var(--space-6) !important;
+  }
+  .hero-title {
+    font-size: 2rem !important;
+  }
+  .hero-subtitle {
+    font-size: var(--text-sm) !important;
+  }
+
+  .section-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: var(--space-2) !important;
+  }
+  .section-header-title {
+    font-size: var(--text-lg) !important;
+  }
+
+  .pinned-card {
+    padding: var(--space-4) !important;
+    gap: var(--space-4) !important;
+  }
+  .pinned-image {
+    height: 180px !important;
+    flex: 1 1 100% !important;
+  }
+  .pinned-title {
+    font-size: var(--text-xl) !important;
+    margin-bottom: var(--space-2) !important;
+  }
+  .pinned-btn {
+    width: 100% !important;
+    text-align: center !important;
+    display: block !important;
+  }
+
+  .event-list-card {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: var(--space-3) !important;
+    padding: var(--space-4) !important;
+  }
+  .event-list-body {
+    width: 100% !important;
+    display: flex !important;
+    gap: var(--space-3) !important;
+    align-items: center !important;
+  }
+  .event-list-thumb {
+    width: 60px !important;
+    height: 60px !important;
+    font-size: 1.5rem !important;
+    flex-shrink: 0 !important;
+  }
+  .event-list-info {
+    flex: 1 !important;
+    min-width: 0 !important;
+  }
+  .event-list-title {
+    font-size: var(--text-base) !important;
+    font-weight: 700 !important;
+    margin-bottom: 2px !important;
+    word-break: break-word !important;
+  }
+  .event-list-badge-wrap {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: var(--space-1) !important;
+    margin-bottom: 4px !important;
+  }
+  .event-list-btn-area {
+    width: 100% !important;
+  }
+  .event-list-btn {
+    width: 100% !important;
+    text-align: center !important;
+    display: block !important;
+  }
+}

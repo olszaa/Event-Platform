@@ -62,6 +62,7 @@ export default function HomePage() {
     <div style={{ minHeight: "100vh" }}>
       {/* Hero */}
       <header
+        className="hero-header"
         style={{
           textAlign: "center",
           padding: "var(--space-20) var(--space-6) var(--space-12)",
@@ -84,6 +85,7 @@ export default function HomePage() {
           }}
         />
         <h1
+          className="hero-title"
           style={{
             fontSize: "var(--text-5xl)",
             fontWeight: 900,
@@ -99,6 +101,7 @@ export default function HomePage() {
           🎉 Event Registration
         </h1>
         <p
+          className="hero-subtitle"
           style={{
             fontSize: "var(--text-lg)",
             color: "var(--text-secondary)",
@@ -144,8 +147,8 @@ export default function HomePage() {
 
               return (
                 <section>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "var(--space-4)" }}>
-                    <h3 style={{ fontSize: "var(--text-xl)", fontWeight: 800, color: "var(--text-primary)" }}>
+                  <div className="section-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "var(--space-4)" }}>
+                    <h3 className="section-header-title" style={{ color: "var(--text-primary)" }}>
                       📌 งานแนะนำ (Featured Events)
                     </h3>
                     {pinnedEvents.length > 1 && (
@@ -173,8 +176,9 @@ export default function HomePage() {
                     href={`/register/${current.id}`}
                     style={{ textDecoration: "none", color: "inherit", display: "block" }}
                   >
-                    <div className="glass-card" style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-6)", padding: "var(--space-8)", position: "relative", overflow: "hidden", transition: "all 0.5s ease-in-out" }}>
+                    <div className="glass-card pinned-card" style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-6)", padding: "var(--space-8)", position: "relative", overflow: "hidden", transition: "all 0.5s ease-in-out" }}>
                       <div
+                        className="pinned-image"
                         style={{
                           flex: "1 1 300px",
                           height: "300px",
@@ -195,7 +199,7 @@ export default function HomePage() {
                             {getThaiStatusLabel(current.status)}
                           </span>
                         </div>
-                        <h2 style={{ fontSize: "var(--text-3xl)", fontWeight: 800, marginBottom: "var(--space-4)" }}>{current.name}</h2>
+                        <h2 className="pinned-title" style={{ fontSize: "var(--text-3xl)", fontWeight: 800, marginBottom: "var(--space-4)" }}>{current.name}</h2>
                         <p style={{ fontSize: "var(--text-base)", color: "var(--text-secondary)", marginBottom: "var(--space-6)", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
                           {current.description || "ไม่มีรายละเอียดเพิ่มเติม"}
                         </p>
@@ -205,7 +209,7 @@ export default function HomePage() {
                         </div>
                         <div>
                           <span 
-                            className={`btn ${current.status === "CLOSED" || current.status === "ARCHIVED" ? "btn--neutral" : "btn--primary"}`} 
+                            className={`btn pinned-btn ${current.status === "CLOSED" || current.status === "ARCHIVED" ? "btn--neutral" : "btn--primary"}`} 
                             style={current.status === "CLOSED" || current.status === "ARCHIVED" ? {} : { backgroundColor: themeColor, borderColor: themeColor }}
                           >
                             {current.status === "CLOSED" || current.status === "ARCHIVED" ? "ดูรายละเอียดงาน" : "ลงทะเบียนเข้างาน →"}
@@ -242,7 +246,7 @@ export default function HomePage() {
             {/* 🟢 ส่วนที่ 2: งานอื่นๆ ที่เปิดลงทะเบียน / กำลังดำเนินงาน (PUBLISHED & ACTIVE) */}
             {otherActiveEvents.length > 0 && (
               <section>
-                <h3 style={{ fontSize: "var(--text-xl)", fontWeight: 700, marginBottom: "var(--space-6)", paddingBottom: "var(--space-2)", borderBottom: "1px solid var(--border-subtle)" }}>
+                <h3 className="section-header-title" style={{ marginBottom: "var(--space-6)", paddingBottom: "var(--space-2)", borderBottom: "1px solid var(--border-subtle)" }}>
                   ⚡ งาน Event ที่เปิดอยู่
                 </h3>
                 <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
@@ -255,37 +259,40 @@ export default function HomePage() {
                         href={`/register/${event.id}`}
                         style={{ textDecoration: "none", color: "inherit" }}
                       >
-                        <div className="glass-card" style={{ display: "flex", alignItems: "center", gap: "var(--space-4)", padding: "var(--space-4)", transition: "all 0.3s" }}>
-                          <div
-                            style={{
-                              width: "80px",
-                              height: "80px",
-                              borderRadius: "var(--radius-md)",
-                              background: bgUrl ? `url(${bgUrl}) center/cover no-repeat` : `linear-gradient(135deg, var(--bg-tertiary) 0%, ${themeColor} 100%)`,
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              fontSize: "2rem",
-                              flexShrink: 0
-                            }}
-                          >
-                            {!bgUrl && "🎪"}
-                          </div>
-                          <div style={{ flex: 1 }}>
-                            <div style={{ display: "flex", gap: "var(--space-2)", alignItems: "center", marginBottom: "var(--space-1)" }}>
-                              <h4 style={{ fontSize: "var(--text-lg)", fontWeight: 700 }}>{event.name}</h4>
-                              <span className="badge" style={getStatusBadgeStyle(event.status, themeColor)}>
-                                {getThaiStatusLabel(event.status)}
-                              </span>
+                        <div className="glass-card event-list-card" style={{ display: "flex", alignItems: "center", gap: "var(--space-4)", padding: "var(--space-4)", transition: "all 0.3s" }}>
+                          <div className="event-list-body">
+                            <div
+                              className="event-list-thumb"
+                              style={{
+                                width: "80px",
+                                height: "80px",
+                                borderRadius: "var(--radius-md)",
+                                background: bgUrl ? `url(${bgUrl}) center/cover no-repeat` : `linear-gradient(135deg, var(--bg-tertiary) 0%, ${themeColor} 100%)`,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                fontSize: "2rem",
+                                flexShrink: 0
+                              }}
+                            >
+                              {!bgUrl && "🎪"}
                             </div>
-                            <div style={{ display: "flex", gap: "var(--space-4)", fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
-                              <span>📅 {new Date(event.startDate).toLocaleDateString("th-TH")}</span>
-                              {event.venue && <span>📍 {event.venue}</span>}
+                            <div className="event-list-info" style={{ flex: 1 }}>
+                              <div className="event-list-badge-wrap" style={{ display: "flex", gap: "var(--space-2)", alignItems: "center", marginBottom: "var(--space-1)" }}>
+                                <h4 className="event-list-title" style={{ fontSize: "var(--text-lg)", fontWeight: 700 }}>{event.name}</h4>
+                                <span className="badge" style={getStatusBadgeStyle(event.status, themeColor)}>
+                                  {getThaiStatusLabel(event.status)}
+                                </span>
+                              </div>
+                              <div style={{ display: "flex", gap: "var(--space-4)", fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
+                                <span>📅 {new Date(event.startDate).toLocaleDateString("th-TH")}</span>
+                                {event.venue && <span>📍 {event.venue}</span>}
+                              </div>
                             </div>
                           </div>
-                          <div>
+                          <div className="event-list-btn-area">
                             <span 
-                              className="btn btn--sm btn--primary" 
+                              className="btn btn--sm btn--primary event-list-btn" 
                               style={{ backgroundColor: themeColor, borderColor: themeColor }}
                             >
                               ลงทะเบียน →
@@ -302,7 +309,7 @@ export default function HomePage() {
             {/* ⚪ ส่วนที่ 3: งานที่ผ่านมาแล้ว (CLOSED & ARCHIVED) */}
             {pastEvents.length > 0 && (
               <section>
-                <h3 style={{ fontSize: "var(--text-xl)", fontWeight: 700, marginBottom: "var(--space-6)", paddingBottom: "var(--space-2)", borderBottom: "1px solid var(--border-subtle)", color: "var(--text-secondary)" }}>
+                <h3 className="section-header-title" style={{ marginBottom: "var(--space-6)", paddingBottom: "var(--space-2)", borderBottom: "1px solid var(--border-subtle)", color: "var(--text-secondary)" }}>
                   🏛️ งานที่ผ่านมาแล้ว (Past Events)
                 </h3>
                 <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
@@ -314,36 +321,39 @@ export default function HomePage() {
                         href={`/register/${event.id}`}
                         style={{ textDecoration: "none", color: "inherit", opacity: 0.85 }}
                       >
-                        <div className="glass-card" style={{ display: "flex", alignItems: "center", gap: "var(--space-4)", padding: "var(--space-4)", transition: "all 0.3s" }}>
-                          <div
-                            style={{
-                              width: "80px",
-                              height: "80px",
-                              borderRadius: "var(--radius-md)",
-                              background: bgUrl ? `url(${bgUrl}) center/cover no-repeat` : "var(--bg-tertiary)",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              fontSize: "2rem",
-                              flexShrink: 0
-                            }}
-                          >
-                            {!bgUrl && "📁"}
-                          </div>
-                          <div style={{ flex: 1 }}>
-                            <div style={{ display: "flex", gap: "var(--space-2)", alignItems: "center", marginBottom: "var(--space-1)" }}>
-                              <h4 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-secondary)" }}>{event.name}</h4>
-                              <span className="badge" style={getStatusBadgeStyle(event.status)}>
-                                {getThaiStatusLabel(event.status)}
-                              </span>
+                        <div className="glass-card event-list-card" style={{ display: "flex", alignItems: "center", gap: "var(--space-4)", padding: "var(--space-4)", transition: "all 0.3s" }}>
+                          <div className="event-list-body">
+                            <div
+                              className="event-list-thumb"
+                              style={{
+                                width: "80px",
+                                height: "80px",
+                                borderRadius: "var(--radius-md)",
+                                background: bgUrl ? `url(${bgUrl}) center/cover no-repeat` : "var(--bg-tertiary)",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                fontSize: "2rem",
+                                flexShrink: 0
+                              }}
+                            >
+                              {!bgUrl && "📁"}
                             </div>
-                            <div style={{ display: "flex", gap: "var(--space-4)", fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
-                              <span>📅 {new Date(event.startDate).toLocaleDateString("th-TH")}</span>
-                              {event.venue && <span>📍 {event.venue}</span>}
+                            <div className="event-list-info" style={{ flex: 1 }}>
+                              <div className="event-list-badge-wrap" style={{ display: "flex", gap: "var(--space-2)", alignItems: "center", marginBottom: "var(--space-1)" }}>
+                                <h4 className="event-list-title" style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-secondary)" }}>{event.name}</h4>
+                                <span className="badge" style={getStatusBadgeStyle(event.status)}>
+                                  {getThaiStatusLabel(event.status)}
+                                </span>
+                              </div>
+                              <div style={{ display: "flex", gap: "var(--space-4)", fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
+                                <span>📅 {new Date(event.startDate).toLocaleDateString("th-TH")}</span>
+                                {event.venue && <span>📍 {event.venue}</span>}
+                              </div>
                             </div>
                           </div>
-                          <div>
-                            <span className="btn btn--sm btn--neutral">
+                          <div className="event-list-btn-area">
+                            <span className="btn btn--sm btn--neutral event-list-btn">
                               ดูรายละเอียด
                             </span>
                           </div>
