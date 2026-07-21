@@ -706,17 +706,6 @@ export default function LuckyDrawPage() {
 
           <select
             className="form-input"
-            value={eventId}
-            onChange={(e) => setEventId(e.target.value)}
-            style={{ width: "180px" }}
-          >
-            {events.map((ev) => (
-              <option key={ev.id} value={ev.id}>{ev.name}</option>
-            ))}
-          </select>
-
-          <select
-            className="form-input"
             value={selectedPrize?.id || ""}
             onChange={(e) => {
               const prize = prizes.find((p) => p.id === e.target.value) || null;

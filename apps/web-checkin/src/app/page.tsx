@@ -399,19 +399,6 @@ export default function CheckinPage() {
         {/* Config Row */}
         <div className="checkin-config-grid">
           <div className="form-group">
-            <label className="form-label">เลือกงาน</label>
-            <select
-              className="form-input"
-              value={eventId}
-              onChange={(e) => setEventId(e.target.value)}
-            >
-              <option value="">-- เลือกงาน --</option>
-              {events.map((ev) => (
-                <option key={ev.id} value={ev.id}>{ev.name}</option>
-              ))}
-            </select>
-          </div>
-          <div className="form-group">
             <label className="form-label">จุดเช็กอิน</label>
             <select
               className="form-input"
