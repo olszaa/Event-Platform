@@ -148,6 +148,31 @@ export default function RegisterPage() {
     );
   }
 
+  const canRegister =
+    event.status === "PUBLISHED" ||
+    (event.status === "ACTIVE" && event.settings?.enableRegisterWhenActive !== false);
+
+  if (!canRegister) {
+    return (
+      <div className="flex-center" style={{ minHeight: "100vh", padding: "var(--space-6)" }}>
+        <div className="glass-card" style={{ textAlign: "center", padding: "var(--space-12)", maxWidth: "500px", width: "100%" }}>
+          <div style={{ fontSize: "4rem", marginBottom: "var(--space-4)" }}>🔒</div>
+          <h2 style={{ marginBottom: "var(--space-3)", fontSize: "var(--text-2xl)", fontWeight: 800 }}>
+            งานนี้ไม่ได้เปิดรับลงทะเบียนในขณะนี้
+          </h2>
+          <p style={{ color: "var(--text-secondary)", marginBottom: "var(--space-6)" }}>
+            {event.status === "CLOSED" || event.status === "ARCHIVED"
+              ? "งานนี้ได้เสร็จสิ้นกิจกรรมไปแล้ว"
+              : event.status === "ACTIVE"
+              ? "งานนี้อยู่ในระหว่างดำเนินงานและปิดรับลงทะเบียน"
+              : "สถานะงานปัจจุบันยังไม่พร้อมเปิดรับลงทะเบียน"}
+          </p>
+          <a href="/" className="btn btn--primary">กลับหน้าหลัก</a>
+        </div>
+      </div>
+    );
+  }
+
   // Success State
   if (success) {
     return (

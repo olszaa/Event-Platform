@@ -33,6 +33,15 @@ checkinsRouter.post(
     if (!reg) throw createError(404, "Registration not found");
     if (reg.status === "CANCELLED") throw createError(400, "Registration is cancelled");
 
+    const eventSettings = (reg.event.settings as any) || {};
+    const canCheckin =
+      reg.event.status === "ACTIVE" ||
+      (reg.event.status === "PUBLISHED" && eventSettings.enableCheckinWhenPublic !== false);
+
+    if (!canCheckin) {
+      throw createError(400, "จุดเช็กอินสำหรับงานนี้ยังไม่เปิดให้บริการในขณะนี้");
+    }
+
     // Check if already checked in at this point
     const existingCheckin = reg.checkins.find((c) => c.checkinPointId === checkinPointId);
     if (existingCheckin) {

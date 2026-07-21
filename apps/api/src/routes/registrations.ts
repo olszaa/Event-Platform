@@ -94,6 +94,18 @@ registrationsRouter.post(
   asyncHandler(async (req, res) => {
     const { eventId, fullName, email, phone, company, department, employeeType, groupName, groupMembers, metadata } = req.body;
 
+    const event = await prisma.event.findUnique({ where: { id: eventId } });
+    if (!event) throw createError(404, "ไม่พบข้อมูลงาน Event");
+
+    const settings = (event.settings as any) || {};
+    const canRegister =
+      event.status === "PUBLISHED" ||
+      (event.status === "ACTIVE" && settings.enableRegisterWhenActive !== false);
+
+    if (!canRegister) {
+      throw createError(400, "การลงทะเบียนสำหรับงานนี้ไม่ได้เปิดรับอยู่ในขณะนี้");
+    }
+
     // Generate unique QR code
     const qrCode = generateCode("EVT");
     const qrBaseUrl = process.env.QR_BASE_URL || "http://localhost:3002/checkin";

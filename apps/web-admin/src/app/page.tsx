@@ -56,6 +56,9 @@ export default function AdminPage() {
     luckyDrawAnimation: "pulse",
     coverImage: "",
     allowGroupRegistration: false,
+    isPinned: false,
+    enableRegisterWhenActive: true,
+    enableCheckinWhenPublic: true,
   });
 
   function openCreateEvent() {
@@ -73,6 +76,9 @@ export default function AdminPage() {
       luckyDrawAnimation: "pulse",
       coverImage: "",
       allowGroupRegistration: false,
+      isPinned: false,
+      enableRegisterWhenActive: true,
+      enableCheckinWhenPublic: true,
     });
     setIsCreateEventOpen(true);
   }
@@ -94,6 +100,9 @@ export default function AdminPage() {
       luckyDrawAnimation: ev.settings?.luckyDrawAnimation || "pulse",
       coverImage: ev.coverImage || "",
       allowGroupRegistration: ev.settings?.allowGroupRegistration || false,
+      isPinned: ev.settings?.isPinned || false,
+      enableRegisterWhenActive: ev.settings?.enableRegisterWhenActive !== false,
+      enableCheckinWhenPublic: ev.settings?.enableCheckinWhenPublic !== false,
     });
     setIsCreateEventOpen(true);
   }
@@ -259,6 +268,9 @@ export default function AdminPage() {
           luckyDrawBackground: newEvent.luckyDrawBackground,
           luckyDrawAnimation: newEvent.luckyDrawAnimation,
           allowGroupRegistration: newEvent.allowGroupRegistration,
+          isPinned: newEvent.isPinned,
+          enableRegisterWhenActive: newEvent.enableRegisterWhenActive,
+          enableCheckinWhenPublic: newEvent.enableCheckinWhenPublic,
         }
       };
 
@@ -960,7 +972,43 @@ export default function AdminPage() {
 
           <div style={{ borderTop: "1px solid var(--border-subtle)", marginTop: "var(--space-2)", paddingTop: "var(--space-4)" }}>
             <h4 style={{ marginBottom: "var(--space-3)", fontSize: "var(--text-sm)", fontWeight: 600 }}>การตั้งค่า (Settings)</h4>
-            
+
+            <div className="form-group" style={{ marginBottom: "var(--space-3)" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={newEvent.isPinned}
+                  onChange={(e) => setNewEvent({ ...newEvent, isPinned: e.target.checked })}
+                  style={{ width: "16px", height: "16px" }}
+                />
+                <span style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--color-primary)" }}>📌 Pin to top (ตรึงไว้ด้านบนสุดในหน้าเว็บ)</span>
+              </label>
+            </div>
+
+            <div className="form-group" style={{ marginBottom: "var(--space-3)" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={newEvent.enableRegisterWhenActive}
+                  onChange={(e) => setNewEvent({ ...newEvent, enableRegisterWhenActive: e.target.checked })}
+                  style={{ width: "16px", height: "16px" }}
+                />
+                <span style={{ fontSize: "var(--text-sm)" }}>📝 เปิดให้ลงทะเบียนเมื่อสถานะเป็น Active (จะเปิดรับลงทะเบียนทั้ง Published & Active)</span>
+              </label>
+            </div>
+
+            <div className="form-group" style={{ marginBottom: "var(--space-3)" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={newEvent.enableCheckinWhenPublic}
+                  onChange={(e) => setNewEvent({ ...newEvent, enableCheckinWhenPublic: e.target.checked })}
+                  style={{ width: "16px", height: "16px" }}
+                />
+                <span style={{ fontSize: "var(--text-sm)" }}>🎟️ เปิดให้เช็กอินเมื่อสถานะเป็น Published (จะเปิดให้เช็กอินทั้ง Published & Active)</span>
+              </label>
+            </div>
+
             <div className="form-group" style={{ marginBottom: "var(--space-4)" }}>
               <label style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", cursor: "pointer" }}>
                 <input

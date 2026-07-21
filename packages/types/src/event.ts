@@ -16,6 +16,9 @@ export interface EventSettings {
   checkinBackground?: string;
   luckyDrawBackground?: string;
   luckyDrawAnimation?: "slot" | "pulse" | "random";
+  isPinned?: boolean;
+  enableRegisterWhenActive?: boolean;
+  enableCheckinWhenPublic?: boolean;
 }
 
 export interface CustomField {
