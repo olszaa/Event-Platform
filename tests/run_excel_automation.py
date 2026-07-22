@@ -10,12 +10,19 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 # ===================================
 # API Base URL Configuration
 # ===================================
-# Local Testing (Default):
-API_BASE = os.getenv("API_BASE") or os.getenv("TEST_API_URL") or os.getenv("NEXT_PUBLIC_API_URL") or "http://localhost:4000"
+ENV_TARGETS = {
+    "prod": "https://event-platform-api.onrender.com",
+    "production": "https://event-platform-api.onrender.com",
+    "test": "http://localhost:4000",
+    "local": "http://localhost:4000",
+    "dev": "http://localhost:4000",
+}
 
-# Production / Staging Examples (Uncomment to override):
-# API_BASE = "https://event-platform-api.onrender.com"
-# API_BASE = "https://api.your-production-event.com"
+cli_arg = (sys.argv[1] if len(sys.argv) > 1 else "").lower().strip()
+if cli_arg in ENV_TARGETS:
+    API_BASE = ENV_TARGETS[cli_arg]
+else:
+    API_BASE = os.getenv("API_BASE") or os.getenv("TEST_API_URL") or os.getenv("NEXT_PUBLIC_API_URL") or "http://localhost:4000"
 
 INPUT_EXCEL = r"d:\Project\event-platform\tests\test_cases.xlsx"
 OUTPUT_EXCEL = r"d:\Project\event-platform\tests\test_results.xlsx"

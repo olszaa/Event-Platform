@@ -4,12 +4,16 @@ import https from 'https';
 // ===================================
 // API Base URL Configuration
 // ===================================
-// Local Testing (Default):
-const API_BASE = process.env.API_BASE || process.env.TEST_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+const cliArg = (process.argv[2] || '').toLowerCase().trim();
+const ENV_TARGETS: Record<string, string> = {
+  prod: 'https://event-platform-api.onrender.com',
+  production: 'https://event-platform-api.onrender.com',
+  test: 'http://localhost:4000',
+  local: 'http://localhost:4000',
+  dev: 'http://localhost:4000',
+};
 
-// Production / Staging Examples (Uncomment to override):
-// const API_BASE = 'https://event-platform-api.onrender.com';
-// const API_BASE = 'https://api.your-production-event.com';
+const API_BASE = ENV_TARGETS[cliArg] || process.env.API_BASE || process.env.TEST_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
 interface TestResult {
   suite: string;
