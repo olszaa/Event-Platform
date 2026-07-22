@@ -190,6 +190,7 @@ export default function CheckinPage() {
   }
 
   async function performCheckin(qrCode: string) {
+    // Fallback to active check-in point if none selected
     let pointId = selectedPoint;
     if (!pointId && checkpoints.length > 0) {
       const activePoint = checkpoints.find((cp) => cp.isActive !== false) || checkpoints[0];
