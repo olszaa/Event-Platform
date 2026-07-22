@@ -24,8 +24,21 @@ if cli_arg in ENV_TARGETS:
 else:
     API_BASE = os.getenv("API_BASE") or os.getenv("TEST_API_URL") or os.getenv("NEXT_PUBLIC_API_URL") or "http://localhost:4000"
 
-INPUT_EXCEL = r"d:\Project\event-platform\tests\test_cases.xlsx"
-OUTPUT_EXCEL = r"d:\Project\event-platform\tests\test_results.xlsx"
+# ===================================
+# Excel File Names Resolution
+# ===================================
+env_prefix = cli_arg if cli_arg in ENV_TARGETS else "local"
+
+input_arg = sys.argv[2] if len(sys.argv) > 2 else os.getenv("EXCEL_INPUT")
+INPUT_EXCEL = input_arg if input_arg else r"d:\Project\event-platform\tests\test_cases.xlsx"
+
+output_arg = sys.argv[3] if len(sys.argv) > 3 else os.getenv("EXCEL_OUTPUT")
+if output_arg:
+    OUTPUT_EXCEL = output_arg
+else:
+    OUTPUT_EXCEL = fr"d:\Project\event-platform\tests\test_results_{env_prefix}.xlsx"
+
+DEFAULT_OUTPUT_EXCEL = r"d:\Project\event-platform\tests\test_results.xlsx"
 
 # Global runtime variables store
 context_vars = {
@@ -222,6 +235,10 @@ def run_excel_automation():
         out_ws.column_dimensions[col_letter].width = min(max(max_len + 3, 12), 50)
 
     out_wb.save(OUTPUT_EXCEL)
+    try:
+        out_wb.save(DEFAULT_OUTPUT_EXCEL)
+    except:
+        pass
 
     print("\n===============================================================")
     print(f"SUMMARY: {pass_count}/{total_count} PASSED ({((pass_count/total_count)*100):.1f}%)")
