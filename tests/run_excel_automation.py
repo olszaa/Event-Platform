@@ -7,7 +7,16 @@ import urllib.error
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 
-API_BASE = "http://localhost:4000"
+# ===================================
+# API Base URL Configuration
+# ===================================
+# Local Testing (Default):
+API_BASE = os.getenv("API_BASE") or os.getenv("TEST_API_URL") or os.getenv("NEXT_PUBLIC_API_URL") or "http://localhost:4000"
+
+# Production / Staging Examples (Uncomment to override):
+# API_BASE = "https://event-platform-api.onrender.com"
+# API_BASE = "https://api.your-production-event.com"
+
 INPUT_EXCEL = r"d:\Project\event-platform\tests\test_cases.xlsx"
 OUTPUT_EXCEL = r"d:\Project\event-platform\tests\test_results.xlsx"
 

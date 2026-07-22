@@ -1,7 +1,15 @@
 import http from 'http';
 import https from 'https';
 
-const API_BASE = 'http://localhost:4000';
+// ===================================
+// API Base URL Configuration
+// ===================================
+// Local Testing (Default):
+const API_BASE = process.env.API_BASE || process.env.TEST_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+
+// Production / Staging Examples (Uncomment to override):
+// const API_BASE = 'https://event-platform-api.onrender.com';
+// const API_BASE = 'https://api.your-production-event.com';
 
 interface TestResult {
   suite: string;
