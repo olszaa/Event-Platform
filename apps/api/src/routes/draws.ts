@@ -267,3 +267,127 @@ drawsRouter.get(
     res.json({ success: true, data: winners });
   })
 );
+
+// PUT /api/draws/winners/:id — Update draw winner status
+drawsRouter.put(
+  "/winners/:id",
+  asyncHandler(async (req, res) => {
+    const { status } = req.body;
+    const winnerId = String(req.params.id);
+
+    const oldWinner = await prisma.drawWinner.findUnique({
+      where: { id: winnerId },
+      include: { prize: true }
+    });
+    if (!oldWinner) throw createError(404, "Winner not found");
+
+    const updatedWinner = await prisma.drawWinner.update({
+      where: { id: winnerId },
+      data: { status },
+      include: {
+        registration: { select: { fullName: true } },
+        prize: true
+      }
+    });
+
+    // Recalculate prize.awarded count
+    const acceptedCount = await prisma.drawWinner.count({
+      where: { prizeId: oldWinner.prizeId, status: { in: ["PENDING", "ACCEPTED"] } }
+    });
+    await prisma.prize.update({
+      where: { id: oldWinner.prizeId },
+      data: { awarded: acceptedCount }
+    });
+
+    await logAudit({
+      entityType: "DrawWinner",
+      entityId: winnerId,
+      action: "UPDATE_STATUS",
+      newData: {
+        fullName: updatedWinner.registration.fullName,
+        prizeName: updatedWinner.prize.name,
+        oldStatus: oldWinner.status,
+        newStatus: status
+      }
+    });
+
+    res.json({ success: true, data: updatedWinner });
+  })
+);
+
+// DELETE /api/draws/winners/:id — Delete a winner
+drawsRouter.delete(
+  "/winners/:id",
+  asyncHandler(async (req, res) => {
+    const winnerId = String(req.params.id);
+    
+    const winner = await prisma.drawWinner.findUnique({
+      where: { id: winnerId },
+      include: {
+        registration: { select: { fullName: true } },
+        prize: true
+      }
+    });
+    if (!winner) throw createError(404, "Winner not found");
+
+    await prisma.drawWinner.delete({ where: { id: winnerId } });
+
+    // Recalculate prize.awarded count
+    const acceptedCount = await prisma.drawWinner.count({
+      where: { prizeId: winner.prizeId, status: { in: ["PENDING", "ACCEPTED"] } }
+    });
+    await prisma.prize.update({
+      where: { id: winner.prizeId },
+      data: { awarded: acceptedCount }
+    });
+
+    await logAudit({
+      entityType: "DrawWinner",
+      entityId: winnerId,
+      action: "DELETE",
+      newData: {
+        fullName: winner.registration.fullName,
+        prizeName: winner.prize.name
+      }
+    });
+
+    res.json({ success: true, message: "Winner deleted successfully" });
+  })
+);
+
+// DELETE /api/draws/sessions/:id — Delete draw session
+drawsRouter.delete(
+  "/sessions/:id",
+  asyncHandler(async (req, res) => {
+    const sessionId = String(req.params.id);
+
+    const session = await prisma.drawSession.findUnique({
+      where: { id: sessionId },
+      include: { winners: true }
+    });
+    if (!session) throw createError(404, "Draw session not found");
+
+    await prisma.drawSession.delete({ where: { id: sessionId } });
+
+    // Recalculate awarded counts for affected prize
+    const prizeId = session.prizeId;
+    const acceptedCount = await prisma.drawWinner.count({
+      where: { prizeId, status: { in: ["PENDING", "ACCEPTED"] } }
+    });
+    await prisma.prize.update({
+      where: { id: prizeId },
+      data: { awarded: acceptedCount }
+    });
+
+    await logAudit({
+      entityType: "DrawSession",
+      entityId: sessionId,
+      action: "DELETE",
+      newData: {
+        prizeId: session.prizeId
+      }
+    });
+
+    res.json({ success: true, message: "Draw session deleted successfully" });
+  })
+);

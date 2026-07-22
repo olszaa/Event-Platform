@@ -121,6 +121,15 @@ export default function LuckyDrawPage() {
     }
   };
 
+  const handleLogout = () => {
+    setToken(null);
+    setEventId("");
+    setSelectedPrize(null);
+    localStorage.removeItem("admin_token");
+    localStorage.removeItem("luckydraw_event_id");
+    localStorage.removeItem("luckydraw_prize_id");
+  };
+
   const getAuthHeaders = (): Record<string, string> => {
     return token ? { Authorization: `Bearer ${token}` } : {};
   };
@@ -434,6 +443,13 @@ export default function LuckyDrawPage() {
               <p style={{ fontSize: "var(--text-xs)", color: "var(--text-secondary)" }}>ระบบสุ่มจับรางวัลสำหรับหน้าจอ LED</p>
             </div>
           </div>
+          <button
+            className="btn btn--secondary btn--sm"
+            onClick={handleLogout}
+            style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}
+          >
+            🚪 ออกจากระบบ
+          </button>
         </header>
 
         <main className="container" style={{ padding: "var(--space-10) var(--space-6)" }}>
@@ -783,6 +799,15 @@ export default function LuckyDrawPage() {
             title="กลับไปหน้าเลือกงาน"
           >
             ← เลือกงานใหม่
+          </button>
+
+          <button
+            className="btn btn--secondary btn--sm"
+            onClick={handleLogout}
+            title="ออกจากระบบ"
+            style={{ borderColor: "rgba(239,68,68,0.3)" }}
+          >
+            🚪 ออกจากระบบ
           </button>
 
           <select

@@ -236,6 +236,66 @@ export default function AdminPage() {
     }
   }
 
+  async function handleUpdateWinnerStatus(winnerId: string, status: string) {
+    try {
+      const res = await fetch(`${API_URL}/api/draws/winners/${winnerId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+        body: JSON.stringify({ status })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setDrawSessions(drawSessions.map(session => ({
+          ...session,
+          winners: session.winners.map((w: any) => w.id === winnerId ? { ...w, status } : w)
+        })));
+      } else {
+        alert(`Error: ${data.error}`);
+      }
+    } catch {
+      alert("Failed to update winner status");
+    }
+  }
+
+  async function handleDeleteWinner(winnerId: string) {
+    if (!confirm("คุณต้องการลบผู้ได้รับรางวัลคนนี้ใช่หรือไม่? การกระทำนี้จะคืนโควตารางวัลกลับไปด้วย")) return;
+    try {
+      const res = await fetch(`${API_URL}/api/draws/winners/${winnerId}`, {
+        method: "DELETE",
+        headers: getAuthHeaders()
+      });
+      const data = await res.json();
+      if (data.success) {
+        setDrawSessions(drawSessions.map(session => ({
+          ...session,
+          winners: session.winners.filter((w: any) => w.id !== winnerId)
+        })));
+      } else {
+        alert(`Error: ${data.error}`);
+      }
+    } catch {
+      alert("Failed to delete winner");
+    }
+  }
+
+  async function handleDeleteSession(sessionId: string) {
+    if (!confirm("คุณต้องการลบลบการจับรางวัลรอบนี้ทั้งหมดใช่หรือไม่? ผู้ได้รับรางวัลทั้งหมดในรอบนี้จะถูกลบและคืนโควตารางวัล")) return;
+    try {
+      const res = await fetch(`${API_URL}/api/draws/sessions/${sessionId}`, {
+        method: "DELETE",
+        headers: getAuthHeaders()
+      });
+      const data = await res.json();
+      if (data.success) {
+        setDrawSessions(drawSessions.filter(session => session.id !== sessionId));
+      } else {
+        alert(`Error: ${data.error}`);
+      }
+    } catch {
+      alert("Failed to delete session");
+    }
+  }
+
   function openCreatePoint() {
     setEditingPointId(null);
     setPointForm({
@@ -1088,9 +1148,19 @@ export default function AdminPage() {
                           {new Date(session.createdAt).toLocaleString("th-TH")}
                         </span>
                       </div>
-                      <span className={`badge badge--${session.status === "COMPLETED" ? "success" : "warning"}`}>
-                        {session.status}
-                      </span>
+                      <div className="flex gap-2 items-center">
+                        <span className={`badge badge--${session.status === "COMPLETED" ? "success" : "warning"}`}>
+                          {session.status}
+                        </span>
+                        <button
+                          className="btn btn--danger btn--sm"
+                          style={{ padding: "0.2rem 0.4rem", fontSize: "0.75rem" }}
+                          onClick={() => handleDeleteSession(session.id)}
+                          title="ลบการจับรางวัลรอบนี้"
+                        >
+                          🗑️ ลบ
+                        </button>
+                      </div>
                     </div>
                     {session.winners?.length > 0 && (
                       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
@@ -1102,6 +1172,7 @@ export default function AdminPage() {
                               padding: "var(--space-2) var(--space-3)",
                               background: "var(--bg-glass)",
                               borderRadius: "var(--radius-md)",
+                              alignItems: "center",
                             }}
                           >
                             <div>
@@ -1112,9 +1183,33 @@ export default function AdminPage() {
                                 </span>
                               )}
                             </div>
-                            <span className={`badge badge--${w.status === "REDRAWN" ? "error" : "success"}`}>
-                              {w.status === "REDRAWN" ? "Redrawn" : "✓"}
-                            </span>
+                            <div className="flex gap-2 items-center">
+                              <select
+                                value={w.status}
+                                onChange={(e) => handleUpdateWinnerStatus(w.id, e.target.value)}
+                                style={{
+                                  fontSize: "var(--text-xs)",
+                                  padding: "0.2rem 0.4rem",
+                                  borderRadius: "var(--radius-sm)",
+                                  border: "1px solid var(--border-default)",
+                                  background: "var(--bg-input)",
+                                  color: "var(--text-primary)"
+                                }}
+                              >
+                                <option value="PENDING">⏳ รอยืนยัน (PENDING)</option>
+                                <option value="ACCEPTED">🟢 รับรางวัลแล้ว (ACCEPTED)</option>
+                                <option value="REDRAWN">🔄 สุ่มใหม่แล้ว (REDRAWN)</option>
+                                <option value="CANCELLED">🔴 ยกเลิกสิทธิ์ (CANCELLED)</option>
+                              </select>
+                              <button
+                                className="btn btn--danger btn--sm"
+                                style={{ padding: "0.2rem 0.4rem", fontSize: "0.75rem" }}
+                                onClick={() => handleDeleteWinner(w.id)}
+                                title="ลบผู้ได้รับรางวัลคนนี้"
+                              >
+                                🗑️
+                              </button>
+                            </div>
                           </div>
                         ))}
                       </div>
