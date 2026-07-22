@@ -10,6 +10,7 @@
     "dev:admin": "turbo run dev --filter=@event-platform/web-admin",
     "dev:luckydraw": "turbo run dev --filter=@event-platform/web-luckydraw",
     "build": "turbo run build",
+    "test:automation": "tsx tests/run-automation-tests.ts",
     "lint": "turbo run lint",
     "type-check": "turbo run type-check",
     "db:migrate": "prisma migrate dev",
