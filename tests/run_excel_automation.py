@@ -167,26 +167,17 @@ def run_excel_automation():
         # Context Variable Extraction logic
         if tc_id == "TC-001" and status_code == 200 and isinstance(body_json, dict):
             context_vars["adminToken"] = extract_json_path(body_json, "data.token") or ""
-        elif tc_id == "TC-003" and status_code == 200 and isinstance(body_json, dict):
-            data_arr = body_json.get("data", [])
-            if data_arr and isinstance(data_arr, list):
-                context_vars["eventId"] = data_arr[0].get("id", "")
-        elif tc_id == "TC-005" and status_code == 200 and isinstance(body_json, dict):
-            data_arr = body_json.get("data", [])
-            if data_arr and isinstance(data_arr, list):
-                context_vars["pointId"] = data_arr[0].get("id", "")
-        elif tc_id == "TC-006" and status_code in [200, 201] and isinstance(body_json, dict):
-            context_vars["pointId"] = extract_json_path(body_json, "data.id") or context_vars["pointId"]
+        elif tc_id == "TC-003" and status_code in [200, 201] and isinstance(body_json, dict):
+            context_vars["eventId"] = extract_json_path(body_json, "data.id") or context_vars["eventId"]
         elif tc_id == "TC-007" and status_code in [200, 201] and isinstance(body_json, dict):
-            context_vars["registrationId"] = extract_json_path(body_json, "data.id") or ""
-        elif tc_id == "TC-009" and status_code == 200 and isinstance(body_json, dict):
-            data_arr = body_json.get("data", [])
-            if data_arr and isinstance(data_arr, list):
-                context_vars["prizeId"] = data_arr[0].get("id", "")
-        elif tc_id == "TC-010" and status_code in [200, 201] and isinstance(body_json, dict):
+            context_vars["pointId"] = extract_json_path(body_json, "data.id") or context_vars["pointId"]
+        elif suite == "Registration" and status_code in [200, 201] and isinstance(body_json, dict):
+            context_vars["registrationId"] = extract_json_path(body_json, "data.id") or context_vars["registrationId"]
+        elif tc_id == "TC-031" and status_code in [200, 201] and isinstance(body_json, dict):
+            context_vars["prizeId"] = extract_json_path(body_json, "data.id") or context_vars["prizeId"]
+        elif tc_id == "TC-033" and status_code in [200, 201] and isinstance(body_json, dict):
             context_vars["drawSessionId"] = extract_json_path(body_json, "data.id") or ""
-        elif tc_id == "TC-011" and status_code == 200:
-            # Fetch winners list from session details to populate winnerId
+        elif tc_id == "TC-034" and status_code == 200:
             s_status, s_body, _ = execute_http_request("GET", f"{API_BASE}/api/draws/{context_vars['drawSessionId']}", "", False)
             if s_status == 200 and isinstance(s_body, dict):
                 winners = extract_json_path(s_body, "data.winners")
