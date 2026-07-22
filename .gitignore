@@ -41,6 +41,7 @@ pnpm-debug.log*
 *.njsproj
 *.sln
 *.sw?
+~$*.xlsx
 
 # OS files
 .DS_Store
