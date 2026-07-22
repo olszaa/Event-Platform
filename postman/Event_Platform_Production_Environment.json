@@ -1,0 +1,47 @@
+{
+  "id": "event-platform-prod-env",
+  "name": "Event Platform - Production Environment",
+  "values": [
+    {
+      "key": "baseUrl",
+      "value": "https://event-platform-api.onrender.com",
+      "enabled": true
+    },
+    {
+      "key": "adminToken",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "eventId",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "pointId",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "registrationId",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "prizeId",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "drawSessionId",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "winnerId",
+      "value": "",
+      "enabled": true
+    }
+  ],
+  "_postman_variable_scope": "environment"
+}

@@ -1,0 +1,47 @@
+{
+  "id": "event-platform-local-env",
+  "name": "Event Platform - Local Environment",
+  "values": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:4000",
+      "enabled": true
+    },
+    {
+      "key": "adminToken",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "eventId",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "pointId",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "registrationId",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "prizeId",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "drawSessionId",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "winnerId",
+      "value": "",
+      "enabled": true
+    }
+  ],
+  "_postman_variable_scope": "environment"
+}

@@ -16,6 +16,7 @@
     "test:excel": "python tests/run_excel_automation.py",
     "test:excel:test": "python tests/run_excel_automation.py test",
     "test:excel:prod": "python tests/run_excel_automation.py prod",
+    "generate:postman": "python tests/generate_postman_collection.py",
     "lint": "turbo run lint",
     "type-check": "turbo run type-check",
     "db:migrate": "prisma migrate dev",
