@@ -18,7 +18,7 @@ async function request(method: string, path: string, body?: any, token?: string)
   return new Promise((resolve, reject) => {
     const url = new URL(path, API_BASE);
     const postData = body ? JSON.stringify(body) : '';
-    
+
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
@@ -79,7 +79,7 @@ async function main() {
   // SUITE 1: AUTHENTICATION AUTOMATION
   // -------------------------------------------------------------
   console.log('📦 Suite 1: Authentication & User Credentials');
-  
+
   await runTest('Auth', 'Login as Admin (admin / password123)', async () => {
     const res = await request('POST', '/api/auth/login', { username: 'admin', password: 'password123' });
     if (res.status !== 200 || !res.body.success || !res.body.data.token) {
@@ -218,7 +218,7 @@ async function main() {
     if (res.status !== 200 || !res.body.success) {
       throw new Error(`Spin draw failed: ${JSON.stringify(res.body)}`);
     }
-    
+
     // Fetch session details to get actual DrawWinner record ID
     const sessionRes = await request('GET', `/api/draws/${drawSessionId}`);
     if (!sessionRes.body.data || !sessionRes.body.data.winners || sessionRes.body.data.winners.length === 0) {
@@ -257,9 +257,9 @@ async function main() {
   const failed = total - passed;
 
   console.log('\n===============================================================');
-  console.log(`📊 AUTOMATION TEST SUMMARY REPORT: ${passed}/${total} PASSED (${((passed/total)*100).toFixed(1)}%)`);
+  console.log(`📊 AUTOMATION TEST SUMMARY REPORT: ${passed}/${total} PASSED (${((passed / total) * 100).toFixed(1)}%)`);
   console.log('===============================================================');
-  
+
   if (failed > 0) {
     console.error(`\n❌ ${failed} TESTS FAILED! Please inspect errors above.`);
     process.exit(1);

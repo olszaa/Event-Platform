@@ -153,8 +153,7 @@ def run_excel_automation():
         elif tc_id == "TC-009" and status_code == 200 and isinstance(body_json, dict):
             data_arr = body_json.get("data", [])
             if data_arr and isinstance(data_arr, list):
-                valid_prize = next((p for p in data_arr if (p.get("quantity", 0) - p.get("awarded", 0)) > 0), data_arr[0])
-                context_vars["prizeId"] = valid_prize.get("id", "")
+                context_vars["prizeId"] = data_arr[0].get("id", "")
         elif tc_id == "TC-010" and status_code in [200, 201] and isinstance(body_json, dict):
             context_vars["drawSessionId"] = extract_json_path(body_json, "data.id") or ""
         elif tc_id == "TC-011" and status_code == 200:
