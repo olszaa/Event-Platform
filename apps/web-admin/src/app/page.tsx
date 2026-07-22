@@ -26,6 +26,7 @@ export default function AdminPage() {
   const [loginForm, setLoginForm] = useState({ username: "", password: "", error: "", loading: false });
 
   const [activeTab, setActiveTab] = useState<Tab>("dashboard");
+  const [showPassword, setShowPassword] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [events, setEvents] = useState<any[]>([]);
   const [selectedEventId, setSelectedEventId] = useState("");
@@ -589,7 +590,34 @@ export default function AdminPage() {
             </div>
             <div>
               <label style={{ display: "block", marginBottom: "var(--space-2)" }}>Password</label>
-              <Input type="password" value={loginForm.password} onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })} required />
+              <div style={{ position: "relative" }}>
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  value={loginForm.password}
+                  onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
+                  required
+                  style={{ width: "100%", paddingRight: "40px" }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{
+                    position: "absolute",
+                    right: "12px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    fontSize: "1.2rem",
+                    padding: 0,
+                    lineHeight: 1,
+                  }}
+                  title={showPassword ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}
+                >
+                  {showPassword ? "👁️" : "🙈"}
+                </button>
+              </div>
             </div>
             {loginForm.error && <div style={{ color: "var(--color-danger)", fontSize: "0.875rem" }}>{loginForm.error}</div>}
             <Button type="submit" disabled={loginForm.loading} style={{ marginTop: "var(--space-4)" }}>

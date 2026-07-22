@@ -49,6 +49,7 @@ export default function LuckyDrawPage() {
   const [token, setToken] = useState<string | null>(null);
   const [isCheckingToken, setIsCheckingToken] = useState(true);
   const [loginForm, setLoginForm] = useState({ username: "", password: "", error: "", loading: false });
+  const [showPassword, setShowPassword] = useState(false);
 
   const [eventId, setEventIdRaw] = useState("");
 
@@ -366,15 +367,37 @@ export default function LuckyDrawPage() {
                 style={{ width: "100%", padding: "0.5rem", borderRadius: "4px", border: "1px solid #ccc", backgroundColor: "white", color: "black" }}
               />
             </div>
-            <div>
+             <div>
               <label style={{ display: "block", marginBottom: "var(--space-2)" }}>Password</label>
-              <input 
-                type="password" 
-                value={loginForm.password} 
-                onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })} 
-                required 
-                style={{ width: "100%", padding: "0.5rem", borderRadius: "4px", border: "1px solid #ccc", backgroundColor: "white", color: "black" }}
-              />
+              <div style={{ position: "relative" }}>
+                <input 
+                  type={showPassword ? "text" : "password"} 
+                  value={loginForm.password} 
+                  onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })} 
+                  required 
+                  style={{ width: "100%", padding: "0.5rem", paddingRight: "40px", borderRadius: "4px", border: "1px solid #ccc", backgroundColor: "white", color: "black" }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{
+                    position: "absolute",
+                    right: "12px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    fontSize: "1.2rem",
+                    color: "#999",
+                    padding: 0,
+                    lineHeight: 1,
+                  }}
+                  title={showPassword ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}
+                >
+                  {showPassword ? "👁️" : "🙈"}
+                </button>
+              </div>
             </div>
             {loginForm.error && <div style={{ color: "var(--color-danger)", fontSize: "0.875rem" }}>{loginForm.error}</div>}
             <button 
