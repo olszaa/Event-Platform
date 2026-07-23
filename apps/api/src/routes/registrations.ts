@@ -76,6 +76,8 @@ registrationsRouter.get(
       { key: "email", header: "อีเมล", width: 25 },
       { key: "phone", header: "เบอร์โทร", width: 15 },
       { key: "company", header: "บริษัท/หน่วยงาน/องค์กร", width: 25 },
+      { key: "department", header: "แผนก", width: 18 },
+      { key: "employeeType", header: "ประเภทพนักงาน", width: 18 },
       { key: "ticketNumber", header: "Ticket Number", width: 18 },
       { key: "luckyDrawNumber", header: "Lucky Draw Number", width: 20 },
       { key: "status", header: "สถานะ", width: 15 },
@@ -89,6 +91,8 @@ registrationsRouter.get(
         email: "somchai@example.com",
         phone: "0812345678",
         company: "บริษัท เทคโนโลยี จำกัด",
+        department: "ไอที",
+        employeeType: "ประจำ",
         ticketNumber: "A00001",
         luckyDrawNumber: "A00001",
         status: "อนุมัติ",
@@ -100,6 +104,8 @@ registrationsRouter.get(
         email: "somying@example.com",
         phone: "0823456789",
         company: "องค์กรภาครัฐ",
+        department: "การเงิน",
+        employeeType: "สัญญาจ้าง",
         ticketNumber: "B00001",
         luckyDrawNumber: "B00001",
         status: "อนุมัติ",
@@ -134,6 +140,8 @@ registrationsRouter.get(
       { key: "email", header: "อีเมล", width: 25 },
       { key: "phone", header: "เบอร์โทร", width: 15 },
       { key: "company", header: "บริษัท/หน่วยงาน/องค์กร", width: 25 },
+      { key: "department", header: "แผนก", width: 18 },
+      { key: "employeeType", header: "ประเภทพนักงาน", width: 18 },
       { key: "ticketNumber", header: "Ticket Number", width: 18 },
       { key: "luckyDrawNumber", header: "Lucky Draw Number", width: 20 },
       { key: "status", header: "สถานะ", width: 15 },
@@ -143,10 +151,19 @@ registrationsRouter.get(
 
     const data = registrations.map((r) => ({
       ...r,
+      department: r.department || "-",
+      employeeType: r.employeeType || "-",
       checkedIn: r.checkins.length > 0 ? "✓" : "-",
       prize: r.drawWinners.map((w) => w.prize.name).join(", ") || "-",
       createdAt: new Date(r.createdAt).toLocaleString("th-TH"),
-      status: r.status === "CHECKED_IN" ? "อนุมัติ (เช็กอินแล้ว)" : "อนุมัติ",
+      status:
+        r.status === "CHECKED_IN"
+          ? "อนุมัติ (เช็กอินแล้ว)"
+          : r.status === "APPROVED"
+          ? "อนุมัติ"
+          : r.status === "CANCELLED"
+          ? "ยกเลิก"
+          : "รอการอนุมัติ",
     }));
 
     const buffer = generateExcel(data as any, columns, "apploval");
@@ -257,7 +274,23 @@ registrationsRouter.post(
       const ticketNumber = row.ticketNumber && String(row.ticketNumber).trim() !== "-" ? String(row.ticketNumber).trim() : null;
       const luckyDrawNumber = row.luckyDrawNumber && String(row.luckyDrawNumber).trim() !== "-" ? String(row.luckyDrawNumber).trim() : null;
       const qrCode = row.qrCode && String(row.qrCode).trim() !== "-" ? String(row.qrCode).trim() : generateCode("EVT");
-      const status = (row as any).status === "CHECKED_IN" ? "CHECKED_IN" : "APPROVED";
+
+      const rawStatus = (row as any).status ? String((row as any).status).trim() : "";
+      let status = "APPROVED";
+      if (rawStatus) {
+        const strUpper = rawStatus.toUpperCase();
+        if (strUpper === "CHECKED_IN" || rawStatus.includes("เช็กอิน")) {
+          status = "CHECKED_IN";
+        } else if (strUpper === "APPROVED" || rawStatus === "อนุมัติ") {
+          status = "APPROVED";
+        } else if (strUpper === "PENDING_APPROVAL" || rawStatus === "รอการอนุมัติ") {
+          status = "PENDING_APPROVAL";
+        } else if (strUpper === "CANCELLED" || rawStatus === "ยกเลิก") {
+          status = "CANCELLED";
+        } else if (strUpper === "REGISTERED" || rawStatus === "ลงทะเบียน") {
+          status = "REGISTERED";
+        }
+      }
 
       const existingMatch = existingMap.get(qrCode.trim().toLowerCase());
       const isDup = !!existingMatch;
@@ -446,6 +479,16 @@ registrationsRouter.post(
     if (!event) throw createError(404, "ไม่พบข้อมูลงาน Event");
 
     const settings = (event.settings as any) || {};
+    const registerPlatform = settings.registerPlatform || "BOTH";
+    const requestPlatform = (req.body.platform as string) || "EVT";
+
+    if (registerPlatform === "GAS" && requestPlatform !== "GAS") {
+      throw createError(400, "งานนี้อนุญาตให้ลงทะเบียนผ่านช่องทาง Google Apps Script (GAS) เท่านั้น");
+    }
+    if (registerPlatform === "EVT" && requestPlatform === "GAS") {
+      throw createError(400, "งานนี้อนุญาตให้ลงทะเบียนผ่านช่องทาง Event Platform (EVT) เท่านั้น");
+    }
+
     const canRegister =
       event.status === "PUBLISHED" ||
       (event.status === "ACTIVE" && settings.enableRegisterWhenActive !== false);

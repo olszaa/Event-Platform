@@ -29,8 +29,15 @@ checkinsRouter.post(
       });
     }
 
-    if (!reg) throw createError(404, "Registration not found");
-    if (reg.status === "CANCELLED") throw createError(400, "Registration is cancelled");
+    if (!reg) throw createError(404, "ไม่พบข้อมูลผู้ลงทะเบียน");
+
+    if (reg.status === "CANCELLED") {
+      throw createError(400, "ไม่สามารถเช็กอินได้ เนื่องจากสถานะผู้ลงทะเบียนถูกยกเลิก (CANCELLED)");
+    }
+
+    if (reg.status === "PENDING_APPROVAL") {
+      throw createError(400, "ไม่สามารถเช็กอินได้ เนื่องจากสถานะผู้ลงทะเบียนอยู่ระหว่างรอการอนุมัติ (PENDING_APPROVAL)");
+    }
 
     // Fallback checkinPointId if missing
     if (!checkinPointId) {

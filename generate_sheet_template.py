@@ -24,25 +24,25 @@ def build_excel_template(file_path):
 
     # 1. Sheet: registered
     ws_registered = wb.create_sheet(title="registered")
-    reg_headers = ["Timestamp", "Registration ID / QR Code", "ชื่อ-นามสกุล", "อีเมล", "เบอร์โทร", "บริษัท/หน่วยงาน/องค์กร", "สถานะ"]
+    reg_headers = ["Timestamp", "Registration ID / QR Code", "ชื่อ-นามสกุล", "อีเมล", "เบอร์โทร", "บริษัท/หน่วยงาน/องค์กร", "แผนก", "ประเภทพนักงาน", "Ticket Number", "Lucky Draw Number", "สถานะ"]
     ws_registered.append(reg_headers)
     
     reg_sample_data = [
-        ["2026-07-23 10:00:00", "EVT-100001", "สมชาย ใจดี", "somchai@example.com", "0812345678", "บริษัท เทคโนโลยี จำกัด", "รอการอนุมัติ"],
-        ["2026-07-23 10:05:00", "EVT-100002", "สมหญิง รักดี", "somying@example.com", "0823456789", "องค์กรภาครัฐ", "รอการอนุมัติ"],
-        ["2026-07-23 10:10:00", "EVT-100003", "กิตติพงษ์ มั่นคง", "kittipong@example.com", "0834567890", "หน่วยงานอิสระ", "รอการอนุมัติ"],
+        ["2026-07-23 10:00:00", "EVT-100001", "สมชาย ใจดี", "somchai@example.com", "0812345678", "บริษัท เทคโนโลยี จำกัด", "ไอที", "ประจำ", "-", "-", "รอการอนุมัติ"],
+        ["2026-07-23 10:05:00", "EVT-100002", "สมหญิง รักดี", "somying@example.com", "0823456789", "องค์กรภาครัฐ", "การเงิน", "สัญญาจ้าง", "-", "-", "รอการอนุมัติ"],
+        ["2026-07-23 10:10:00", "EVT-100003", "กิตติพงษ์ มั่นคง", "kittipong@example.com", "0834567890", "หน่วยงานอิสระ", "การตลาด", "ชั่วคราว", "-", "-", "รอการอนุมัติ"],
     ]
     for row in reg_sample_data:
         ws_registered.append(row)
 
     # 2. Sheet: apploval
     ws_apploval = wb.create_sheet(title="apploval")
-    app_headers = ["Timestamp", "Registration ID / QR Code", "ชื่อ-นามสกุล", "อีเมล", "เบอร์โทร", "บริษัท/หน่วยงาน/องค์กร", "Ticket Number", "Lucky Draw Number", "สถานะ"]
+    app_headers = ["Timestamp", "Registration ID / QR Code", "ชื่อ-นามสกุล", "อีเมล", "เบอร์โทร", "บริษัท/หน่วยงาน/องค์กร", "แผนก", "ประเภทพนักงาน", "Ticket Number", "Lucky Draw Number", "สถานะ"]
     ws_apploval.append(app_headers)
     
     app_sample_data = [
-        ["2026-07-23 09:30:00", "EVT-100000", "อนันต์ ขยันยิ่ง", "anan@example.com", "0898765432", "บริษัท เทคโนโลยี จำกัด", "A00001", "A00001", "อนุมัติ"],
-        ["2026-07-23 09:35:00", "EVT-100004", "วิภาดา สุขใจ", "wiphada@example.com", "0887654321", "องค์กรภาครัฐ", "B00001", "B00001", "อนุมัติ"],
+        ["2026-07-23 09:30:00", "EVT-100000", "อนันต์ ขยันยิ่ง", "anan@example.com", "0898765432", "บริษัท เทคโนโลยี จำกัด", "ไอที", "ประจำ", "A00001", "A00001", "อนุมัติ"],
+        ["2026-07-23 09:35:00", "EVT-100004", "วิภาดา สุขใจ", "wiphada@example.com", "0887654321", "องค์กรภาครัฐ", "การเงิน", "ประจำ", "B00001", "B00001", "อนุมัติ"],
     ]
     for row in app_sample_data:
         ws_apploval.append(row)
@@ -99,7 +99,7 @@ def build_excel_template(file_path):
     print(f"Successfully generated Excel template at: {file_path}")
 
     # Generate CSV files in gas/ directory as well
-    gas_dir = r"d:\Project\event-platform\gas"
+    gas_dir = os.path.join(os.path.dirname(os.path.abspath(file_path)), "gas")
     sheets_csv = {
         "registered": (reg_headers, reg_sample_data),
         "apploval": (app_headers, app_sample_data),
@@ -116,4 +116,5 @@ def build_excel_template(file_path):
         print(f"Generated CSV: {csv_path}")
 
 if __name__ == "__main__":
-    build_excel_template(r"d:\Project\event-platform\Event_Registration_Google_Sheet_Template.xlsx")
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    build_excel_template(os.path.join(current_dir, "Event_Registration_Google_Sheet_Template.xlsx"))

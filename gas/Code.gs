@@ -132,7 +132,7 @@ function registerUser(formData) {
     return { success: false, error: "ระบบปิดรับลงทะเบียนอยู่ในขณะนี้" };
   }
 
-  const { fullName, email, phone, company } = formData;
+  const { fullName, email, phone, company, department, employeeType } = formData;
   if (!fullName || !phone || !company) {
     return { success: false, error: "กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน" };
   }
@@ -141,7 +141,7 @@ function registerUser(formData) {
   let sheet = ss.getSheetByName(SHEET_NAMES.REGISTERED);
   if (!sheet) {
     sheet = ss.insertSheet(SHEET_NAMES.REGISTERED);
-    sheet.appendRow(["Timestamp", "Registration ID / QR Code", "ชื่อ-นามสกุล", "อีเมล", "เบอร์โทร", "บริษัท/หน่วยงาน/องค์กร", "สถานะ"]);
+    sheet.appendRow(["Timestamp", "Registration ID / QR Code", "ชื่อ-นามสกุล", "อีเมล", "เบอร์โทร", "บริษัท/หน่วยงาน/องค์กร", "แผนก", "ประเภทพนักงาน", "Ticket Number", "Lucky Draw Number", "สถานะ"]);
   }
 
   // Generate unique Registration Code (QR Code ID)
@@ -156,6 +156,10 @@ function registerUser(formData) {
     email || "-",
     phone,
     company,
+    department || "-",
+    employeeType || "-",
+    "-",
+    "-",
     initialStatus
   ]);
 
@@ -167,6 +171,8 @@ function registerUser(formData) {
       email: email,
       phone: phone,
       company: company,
+      department: department || "-",
+      employeeType: employeeType || "-",
       status: initialStatus,
       timestamp: timestamp.toISOString()
     }
@@ -192,6 +198,26 @@ function checkRegistrationStatus(query) {
       const phone = String(data[i][4] || "").toLowerCase();
 
       if (qrCode === searchStr || phone === searchStr || email === searchStr || name.includes(searchStr)) {
+        let dept = "-";
+        let empType = "-";
+        let ticketNum = "-";
+        let luckyNum = "-";
+        let statusVal = "อนุมัติ";
+
+        if (data[i].length >= 11) {
+          dept = data[i][6] || "-";
+          empType = data[i][7] || "-";
+          ticketNum = data[i][8] || "-";
+          luckyNum = data[i][9] || "-";
+          statusVal = data[i][10] || "อนุมัติ";
+        } else if (data[i].length >= 9) {
+          ticketNum = data[i][6] || "-";
+          luckyNum = data[i][7] || "-";
+          statusVal = data[i][8] || "อนุมัติ";
+        } else {
+          statusVal = data[i][6] || "อนุมัติ";
+        }
+
         return {
           success: true,
           data: {
@@ -200,9 +226,11 @@ function checkRegistrationStatus(query) {
             email: data[i][3],
             phone: data[i][4],
             company: data[i][5],
-            ticketNumber: data[i][6] || "-",
-            luckyDrawNumber: data[i][7] || "-",
-            status: data[i][8] || "อนุมัติ"
+            department: dept,
+            employeeType: empType,
+            ticketNumber: ticketNum,
+            luckyDrawNumber: luckyNum,
+            status: statusVal
           }
         };
       }
@@ -220,6 +248,26 @@ function checkRegistrationStatus(query) {
       const phone = String(data[i][4] || "").toLowerCase();
 
       if (qrCode === searchStr || phone === searchStr || email === searchStr || name.includes(searchStr)) {
+        let dept = "-";
+        let empType = "-";
+        let ticketNum = "-";
+        let luckyNum = "-";
+        let statusVal = "รอการอนุมัติ";
+
+        if (data[i].length >= 11) {
+          dept = data[i][6] || "-";
+          empType = data[i][7] || "-";
+          ticketNum = data[i][8] || "-";
+          luckyNum = data[i][9] || "-";
+          statusVal = data[i][10] || "รอการอนุมัติ";
+        } else if (data[i].length >= 9) {
+          ticketNum = data[i][6] || "-";
+          luckyNum = data[i][7] || "-";
+          statusVal = data[i][8] || "รอการอนุมัติ";
+        } else {
+          statusVal = data[i][6] || "รอการอนุมัติ";
+        }
+
         return {
           success: true,
           data: {
@@ -228,7 +276,11 @@ function checkRegistrationStatus(query) {
             email: data[i][3],
             phone: data[i][4],
             company: data[i][5],
-            status: data[i][6] || "รอการอนุมัติ"
+            department: dept,
+            employeeType: empType,
+            ticketNumber: ticketNum,
+            luckyDrawNumber: luckyNum,
+            status: statusVal
           }
         };
       }

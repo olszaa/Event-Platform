@@ -79,6 +79,18 @@ export default function LuckyDrawPage() {
       localStorage.removeItem("luckydraw_prize_id");
     }
   };
+  // Custom Alert Modal State
+  const [alertModal, setAlertModal] = useState<{
+    show: boolean;
+    type: "success" | "error" | "info" | "warning";
+    title?: string;
+    message: string;
+  }>({ show: false, type: "error", message: "" });
+
+  function showAlert(message: string, type: "success" | "error" | "info" | "warning" = "error", title?: string) {
+    setAlertModal({ show: true, type, title, message });
+  }
+
   const [drawState, setDrawState] = useState<DrawState>("idle");
   const [sessionId, setSessionId] = useState("");
   const [spinNames, setSpinNames] = useState<string[]>([]);
@@ -256,6 +268,7 @@ export default function LuckyDrawPage() {
 
   async function startDraw(overrideCount?: number) {
     if (!selectedPrize || !eventId) return;
+    if (drawState !== "idle") return;
     const count = overrideCount || drawCountInput || 1;
 
     setDrawState("selecting");
@@ -269,7 +282,7 @@ export default function LuckyDrawPage() {
       });
       const data = await res.json();
       if (!data.success) {
-        alert(data.error || "ไม่สามารถเริ่มจับรางวัลได้");
+        showAlert(data.error || "ไม่สามารถเริ่มจับรางวัลได้", "error");
         setDrawState("idle");
         return;
       }
@@ -286,7 +299,7 @@ export default function LuckyDrawPage() {
       const spinData = await spinRes.json();
 
       if (!spinData.success) {
-        alert(spinData.error || "เกิดข้อผิดพลาดขณะจับรางวัล");
+        showAlert(spinData.error || "เกิดข้อผิดพลาดขณะจับรางวัล", "error");
         setDrawState("idle");
         return;
       }
@@ -301,7 +314,7 @@ export default function LuckyDrawPage() {
         }
       }
     } catch {
-      alert("เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง");
+      showAlert("เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง", "error");
       setDrawState("idle");
     }
   }
@@ -974,7 +987,30 @@ export default function LuckyDrawPage() {
             ))}
           </div>
         )}
-      </div>
+      {/* Custom Alert Popup Modal */}
+      {alertModal.show && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", backdropFilter: "blur(8px)", zIndex: 10000, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
+          <div style={{ maxWidth: "420px", width: "100%", background: "#1e1e2e", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "16px", padding: "1.75rem", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.6)", textAlign: "center", animation: "scaleUp 0.2s ease-out" }}>
+            <div style={{ fontSize: "3rem", marginBottom: "0.75rem" }}>
+              {alertModal.type === "success" ? "🎉" : alertModal.type === "warning" ? "⚠️" : alertModal.type === "info" ? "ℹ️" : "❌"}
+            </div>
+            <h3 style={{ fontSize: "1.25rem", fontWeight: 700, color: alertModal.type === "success" ? "#10B981" : alertModal.type === "warning" ? "#F59E0B" : alertModal.type === "info" ? "#3B82F6" : "#EF4444", marginBottom: "0.5rem" }}>
+              {alertModal.title || (alertModal.type === "success" ? "ทำรายการสำเร็จ" : alertModal.type === "warning" ? "แจ้งเตือน" : alertModal.type === "info" ? "แจ้งเตือน" : "เกิดข้อผิดพลาด")}
+            </h3>
+            <p style={{ fontSize: "0.95rem", color: "#cbd5e1", whiteSpace: "pre-line", lineHeight: "1.5", marginBottom: "1.5rem" }}>
+              {alertModal.message}
+            </p>
+            <button
+              type="button"
+              className="btn btn--primary"
+              onClick={() => setAlertModal((prev) => ({ ...prev, show: false }))}
+              style={{ minWidth: "130px", padding: "0.6rem 1.6rem", borderRadius: "10px", fontWeight: 600, margin: "0 auto", background: alertModal.type === "success" ? "linear-gradient(135deg, #10B981, #059669)" : alertModal.type === "warning" ? "linear-gradient(135deg, #F59E0B, #D97706)" : alertModal.type === "info" ? "linear-gradient(135deg, #3B82F6, #2563EB)" : "linear-gradient(135deg, #EF4444, #DC2626)" }}
+            >
+              ตกลง (OK)
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

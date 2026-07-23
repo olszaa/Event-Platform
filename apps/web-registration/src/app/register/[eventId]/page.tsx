@@ -86,6 +86,7 @@ export default function RegisterPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (submitting) return;
     if (!validate()) return;
 
     setSubmitting(true);
@@ -142,6 +143,24 @@ export default function RegisterPage() {
         <div className="glass-card" style={{ textAlign: "center", padding: "var(--space-12)" }}>
           <div style={{ fontSize: "4rem", marginBottom: "var(--space-4)" }}>😕</div>
           <h2 style={{ marginBottom: "var(--space-3)" }}>ไม่พบงานนี้</h2>
+          <a href="/" className="btn btn--primary">กลับหน้าหลัก</a>
+        </div>
+      </div>
+    );
+  }
+
+  const registerPlatform = event.settings?.registerPlatform || "BOTH";
+  if (registerPlatform === "GAS") {
+    return (
+      <div className="flex-center" style={{ minHeight: "100vh", padding: "var(--space-6)" }}>
+        <div className="glass-card" style={{ textAlign: "center", padding: "var(--space-12)", maxWidth: "500px", width: "100%" }}>
+          <div style={{ fontSize: "4rem", marginBottom: "var(--space-4)" }}>🌐</div>
+          <h2 style={{ marginBottom: "var(--space-3)", fontSize: "var(--text-2xl)", fontWeight: 800 }}>
+            เปิดรับลงทะเบียนเฉพาะช่องทาง Google Apps Script (GAS)
+          </h2>
+          <p style={{ color: "var(--text-secondary)", marginBottom: "var(--space-6)" }}>
+            งานนี้ถูกตั้งค่าให้อนุญาตลงทะเบียนผ่านระบบ Google Apps Script (GAS) เท่านั้น ไม่เปิดให้ลงทะเบียนผ่านหน้าเว็บนี้
+          </p>
           <a href="/" className="btn btn--primary">กลับหน้าหลัก</a>
         </div>
       </div>

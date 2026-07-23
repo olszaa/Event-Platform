@@ -54,6 +54,18 @@ export default function AdminPage() {
     sortOrder: 1,
   });
 
+  // Custom Alert Modal State
+  const [alertModal, setAlertModal] = useState<{
+    show: boolean;
+    type: "success" | "error" | "info" | "warning";
+    title?: string;
+    message: string;
+  }>({ show: false, type: "error", message: "" });
+
+  function showAlert(message: string, type: "success" | "error" | "info" | "warning" = "error", title?: string) {
+    setAlertModal({ show: true, type, title, message });
+  }
+
   // Prize Management State
   const [duplicateModal, setDuplicateModal] = useState<{
     show: boolean;
@@ -105,6 +117,7 @@ export default function AdminPage() {
     isPinned: false,
     enableRegisterWhenActive: true,
     enableCheckinWhenPublic: true,
+    registerPlatform: "BOTH",
   });
 
   function openCreateEvent() {
@@ -125,6 +138,7 @@ export default function AdminPage() {
       isPinned: false,
       enableRegisterWhenActive: true,
       enableCheckinWhenPublic: true,
+      registerPlatform: "BOTH",
     });
     setIsCreateEventOpen(true);
   }
@@ -149,6 +163,7 @@ export default function AdminPage() {
       isPinned: ev.settings?.isPinned || false,
       enableRegisterWhenActive: ev.settings?.enableRegisterWhenActive !== false,
       enableCheckinWhenPublic: ev.settings?.enableCheckinWhenPublic !== false,
+      registerPlatform: ev.settings?.registerPlatform || "BOTH",
     });
     setIsCreateEventOpen(true);
   }
@@ -184,8 +199,9 @@ export default function AdminPage() {
 
   async function handleSavePrize(e: React.FormEvent) {
     e.preventDefault();
+    if (loading) return;
     if (!selectedEventId) {
-      alert("กรุณาเลือกงาน Event ก่อนเพิ่มรางวัล");
+      showAlert("กรุณาเลือกงาน Event ก่อนเพิ่มรางวัล", "warning");
       return;
     }
     setLoading(true);
@@ -213,8 +229,9 @@ export default function AdminPage() {
         if (data.success) {
           setPrizes(prizes.map((p) => (p.id === editingPrizeId ? data.data : p)));
           setIsPrizeModalOpen(false);
+          showAlert("บันทึกข้อมูลรางวัลเรียบร้อยแล้ว", "success");
         } else {
-          alert(`Error: ${data.error}`);
+          showAlert(data.error || "เกิดข้อผิดพลาดในการบันทึกรางวัล", "error");
         }
       } else {
         const res = await fetch(`${API_URL}/api/prizes`, {
@@ -226,12 +243,13 @@ export default function AdminPage() {
         if (data.success) {
           setPrizes([...prizes, data.data]);
           setIsPrizeModalOpen(false);
+          showAlert("เพิ่มรางวัลเรียบร้อยแล้ว", "success");
         } else {
-          alert(`Error: ${data.error}`);
+          showAlert(data.error || "เกิดข้อผิดพลาดในการเพิ่มรางวัล", "error");
         }
       }
     } catch {
-      alert("ไม่สามารถบันทึกข้อมูลรางวัลได้");
+      showAlert("ไม่สามารถบันทึกข้อมูลรางวัลได้", "error");
     } finally {
       setLoading(false);
     }
@@ -247,11 +265,12 @@ export default function AdminPage() {
       const data = await res.json();
       if (data.success) {
         setPrizes(prizes.filter((p) => p.id !== id));
+        showAlert("ลบรางวัลเรียบร้อยแล้ว", "success");
       } else {
-        alert(`Error: ${data.error}`);
+        showAlert(data.error || "เกิดข้อผิดพลาดในการลบรางวัล", "error");
       }
     } catch {
-      alert("Failed to delete prize");
+      showAlert("ไม่สามารถลบรางวัลได้", "error");
     }
   }
 
@@ -268,11 +287,12 @@ export default function AdminPage() {
           ...session,
           winners: session.winners.map((w: any) => w.id === winnerId ? { ...w, status } : w)
         })));
+        showAlert("อัปเดตสถานะผู้ได้รับรางวัลเรียบร้อยแล้ว", "success");
       } else {
-        alert(`Error: ${data.error}`);
+        showAlert(data.error || "เกิดข้อผิดพลาดในการอัปเดตสถานะ", "error");
       }
     } catch {
-      alert("Failed to update winner status");
+      showAlert("ไม่สามารถอัปเดตสถานะผู้ได้รับรางวัลได้", "error");
     }
   }
 
@@ -289,11 +309,12 @@ export default function AdminPage() {
           ...session,
           winners: session.winners.filter((w: any) => w.id !== winnerId)
         })));
+        showAlert("ลบผู้ได้รับรางวัลเรียบร้อยแล้ว", "success");
       } else {
-        alert(`Error: ${data.error}`);
+        showAlert(data.error || "เกิดข้อผิดพลาดในการลบผู้ได้รับรางวัล", "error");
       }
     } catch {
-      alert("Failed to delete winner");
+      showAlert("ไม่สามารถลบผู้ได้รับรางวัลได้", "error");
     }
   }
 
@@ -307,11 +328,12 @@ export default function AdminPage() {
       const data = await res.json();
       if (data.success) {
         setDrawSessions(drawSessions.filter(session => session.id !== sessionId));
+        showAlert("ลบการจับรางวัลรอบนี้เรียบร้อยแล้ว", "success");
       } else {
-        alert(`Error: ${data.error}`);
+        showAlert(data.error || "เกิดข้อผิดพลาดในการลบการจับรางวัล", "error");
       }
     } catch {
-      alert("Failed to delete session");
+      showAlert("ไม่สามารถลบการจับรางวัลได้", "error");
     }
   }
 
@@ -339,8 +361,9 @@ export default function AdminPage() {
 
   async function handleSavePoint(e: React.FormEvent) {
     e.preventDefault();
+    if (loading) return;
     if (!selectedEventId) {
-      alert("กรุณาเลือกงาน Event ก่อนเพิ่มทางเข้างาน");
+      showAlert("กรุณาเลือกงาน Event ก่อนเพิ่มทางเข้างาน", "warning");
       return;
     }
     setLoading(true);
@@ -363,8 +386,9 @@ export default function AdminPage() {
         if (data.success) {
           setCheckinPoints(checkinPoints.map((p) => (p.id === editingPointId ? data.data : p)));
           setIsPointModalOpen(false);
+          showAlert("บันทึกข้อมูลทางเข้างานเรียบร้อยแล้ว", "success");
         } else {
-          alert(`Error: ${data.error}`);
+          showAlert(data.error || "เกิดข้อผิดพลาดในการบันทึกทางเข้างาน", "error");
         }
       } else {
         const res = await fetch(`${API_URL}/api/checkin/points`, {
@@ -376,12 +400,13 @@ export default function AdminPage() {
         if (data.success) {
           setCheckinPoints([...checkinPoints, data.data]);
           setIsPointModalOpen(false);
+          showAlert("เพิ่มทางเข้างานเรียบร้อยแล้ว", "success");
         } else {
-          alert(`Error: ${data.error}`);
+          showAlert(data.error || "เกิดข้อผิดพลาดในการเพิ่มทางเข้างาน", "error");
         }
       }
     } catch {
-      alert("ไม่สามารถบันทึกข้อมูลทางเข้างานได้");
+      showAlert("ไม่สามารถบันทึกข้อมูลทางเข้างานได้", "error");
     } finally {
       setLoading(false);
     }
@@ -397,11 +422,12 @@ export default function AdminPage() {
       const data = await res.json();
       if (data.success) {
         setCheckinPoints(checkinPoints.filter((p) => p.id !== id));
+        showAlert("ลบทางเข้างานเรียบร้อยแล้ว", "success");
       } else {
-        alert(`Error: ${data.error}`);
+        showAlert(data.error || "เกิดข้อผิดพลาดในการลบทางเข้างาน", "error");
       }
     } catch {
-      alert("Failed to delete point");
+      showAlert("ไม่สามารถลบทางเข้างานได้", "error");
     }
   }
 
@@ -417,7 +443,7 @@ export default function AdminPage() {
         setCheckinPoints(checkinPoints.map((p) => (p.id === point.id ? { ...p, isActive: !point.isActive } : p)));
       }
     } catch {
-      alert("Failed to update status");
+      showAlert("ไม่สามารถอัปเดตสถานะทางเข้างานได้", "error");
     }
   }
 
@@ -435,6 +461,7 @@ export default function AdminPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loginForm.loading) return;
     setLoginForm((prev) => ({ ...prev, error: "", loading: true }));
     try {
       const res = await fetch(`${API_URL}/api/auth/login`, {
@@ -595,9 +622,9 @@ export default function AdminPage() {
       if (data.data.skipped) msgParts.push(`ข้ามรายการซ้ำ: ${data.data.skipped} รายการ`);
       if (data.data.errors) msgParts.push(`ข้อผิดพลาด: ${data.data.errors} รายการ`);
 
-      alert(`การนำเข้าเสร็จสมบูรณ์ 🎉\n\n${msgParts.join("\n")}`);
+      showAlert(`การนำเข้าเสร็จสมบูรณ์ 🎉\n\n${msgParts.join("\n")}`, "success", "นำเข้าข้อมูลสำเร็จ");
     } else {
-      alert(`เกิดข้อผิดพลาด: ${data.error || "ไม่สามารถนำเข้าข้อมูลได้"}`);
+      showAlert(data.error || "ไม่สามารถนำเข้าข้อมูลได้", "error");
     }
 
     // Reload registrations
@@ -608,6 +635,7 @@ export default function AdminPage() {
 
   async function handleCreateEvent(e: React.FormEvent) {
     e.preventDefault();
+    if (loading) return;
     setLoading(true);
     try {
       const payload = {
@@ -627,6 +655,7 @@ export default function AdminPage() {
           isPinned: newEvent.isPinned,
           enableRegisterWhenActive: newEvent.enableRegisterWhenActive,
           enableCheckinWhenPublic: newEvent.enableCheckinWhenPublic,
+          registerPlatform: newEvent.registerPlatform,
         }
       };
 
@@ -640,8 +669,9 @@ export default function AdminPage() {
         if (data.success) {
           setEvents(events.map((ev) => (ev.id === editingEventId ? data.data : ev)));
           setIsCreateEventOpen(false);
+          showAlert("บันทึกข้อมูลงาน Event เรียบร้อยแล้ว", "success");
         } else {
-          alert(`Error: ${data.error}`);
+          showAlert(data.error || "เกิดข้อผิดพลาดในการบันทึกงาน Event", "error");
         }
       } else {
         const res = await fetch(`${API_URL}/api/events`, {
@@ -654,12 +684,13 @@ export default function AdminPage() {
           setEvents([data.data, ...events]);
           setIsCreateEventOpen(false);
           if (!selectedEventId) setSelectedEventId(data.data.id);
+          showAlert("สร้างงาน Event เรียบร้อยแล้ว", "success");
         } else {
-          alert(`Error: ${data.error}`);
+          showAlert(data.error || "เกิดข้อผิดพลาดในการสร้างงาน Event", "error");
         }
       }
     } catch (err) {
-      alert("Failed to save event");
+      showAlert("ไม่สามารถบันทึกข้อมูลงาน Event ได้", "error");
     } finally {
       setLoading(false);
     }
@@ -675,11 +706,12 @@ export default function AdminPage() {
       const data = await res.json();
       if (data.success) {
         setEvents(events.map(ev => ev.id === id ? { ...ev, status: newStatus } : ev));
+        showAlert("อัปเดตสถานะงาน Event เรียบร้อยแล้ว", "success");
       } else {
-        alert(`Error: ${data.error}`);
+        showAlert(data.error || "เกิดข้อผิดพลาดในการอัปเดตสถานะ", "error");
       }
     } catch (err) {
-      alert("Failed to update status");
+      showAlert("ไม่สามารถอัปเดตสถานะงาน Event ได้", "error");
     }
   }
 
@@ -1031,8 +1063,26 @@ export default function AdminPage() {
                         <td>{reg.department || "-"}</td>
                         <td>{reg.employeeType || "-"}</td>
                         <td>
-                          <span className={`badge badge--${reg.status === "CHECKED_IN" ? "success" : reg.status === "CANCELLED" ? "error" : "primary"}`}>
-                            {reg.status === "CHECKED_IN" ? "✓ เช็กอิน" : reg.status === "CANCELLED" ? "ยกเลิก" : "ลงทะเบียน"}
+                          <span
+                            className={`badge badge--${
+                              reg.status === "CHECKED_IN"
+                                ? "success"
+                                : reg.status === "APPROVED"
+                                ? "primary"
+                                : reg.status === "CANCELLED"
+                                ? "error"
+                                : "warning"
+                            }`}
+                          >
+                            {reg.status === "CHECKED_IN"
+                              ? "✓ เช็กอินแล้ว"
+                              : reg.status === "APPROVED"
+                              ? "อนุมัติ"
+                              : reg.status === "CANCELLED"
+                              ? "ยกเลิก"
+                              : reg.status === "PENDING_APPROVAL"
+                              ? "รอการอนุมัติ"
+                              : "ลงทะเบียน"}
                           </span>
                         </td>
                         <td style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-xs)" }}>{reg.qrCode}</td>
@@ -1423,8 +1473,9 @@ export default function AdminPage() {
                                   });
                                   if (res.ok) {
                                     setAdminUsers(adminUsers.filter((u) => u.id !== user.id));
+                                    showAlert("ลบผู้ใช้เรียบร้อยแล้ว", "success");
                                   } else {
-                                    alert("Failed to delete user");
+                                    showAlert("ไม่สามารถลบผู้ใช้ได้", "error");
                                   }
                                 }
                               }}
@@ -1597,6 +1648,25 @@ export default function AdminPage() {
                 />
                 <span style={{ fontSize: "var(--text-sm)" }}>🎟️ เปิดให้เช็กอินเมื่อสถานะเป็น Published (จะเปิดให้เช็กอินทั้ง Published & Active)</span>
               </label>
+            </div>
+
+            <div className="form-group" style={{ marginBottom: "var(--space-4)" }}>
+              <label className="form-label" style={{ fontWeight: 600, display: "block", marginBottom: "var(--space-1)" }}>
+                🌐 ช่องทางที่อนุญาตให้ลงทะเบียน (Registration Platform)
+              </label>
+              <select
+                className="form-input"
+                value={newEvent.registerPlatform}
+                onChange={(e) => setNewEvent({ ...newEvent, registerPlatform: e.target.value })}
+                style={{ width: "100%" }}
+              >
+                <option value="BOTH">ทุกช่องทาง (Google Apps Script & Event Platform)</option>
+                <option value="GAS">Google Apps Script (GAS) เท่านั้น</option>
+                <option value="EVT">Event Platform (Web Register) เท่านั้น</option>
+              </select>
+              <div style={{ fontSize: "0.75rem", color: "var(--text-tertiary)", marginTop: "var(--space-1)" }}>
+                * หากเลือก GAS ระบบ Event Platform จะปิดรับการลงทะเบียนทางหน้าเว็บและให้ผู้ลงทะเบียนใช้งานผ่าน GAS เท่านั้น
+              </div>
             </div>
 
             <div className="form-group" style={{ marginBottom: "var(--space-4)" }}>
@@ -1780,9 +1850,10 @@ export default function AdminPage() {
               const usersRes = await fetch(`${API_URL}/api/users`, { headers: getAuthHeaders() });
               const data = await usersRes.json();
               if (data.success) setAdminUsers(data.data);
+              showAlert("บันทึกข้อมูลผู้ใช้เรียบร้อยแล้ว", "success");
             } else {
               const data = await res.json();
-              alert(data.message || "Failed to save user");
+              showAlert(data.message || "ไม่สามารถบันทึกข้อมูลผู้ใช้ได้", "error");
             }
           }} 
           style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}
@@ -2102,6 +2173,31 @@ export default function AdminPage() {
                 ⚡ ยืนยันทั้งหมด ({duplicateModal.duplicates.length})
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Alert Popup Modal */}
+      {alertModal.show && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)", zIndex: 10000, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
+          <div style={{ maxWidth: "420px", width: "100%", background: "#1e1e2e", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "16px", padding: "1.75rem", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.6)", textAlign: "center", animation: "scaleUp 0.2s ease-out" }}>
+            <div style={{ fontSize: "3rem", marginBottom: "0.75rem" }}>
+              {alertModal.type === "success" ? "🎉" : alertModal.type === "warning" ? "⚠️" : alertModal.type === "info" ? "ℹ️" : "❌"}
+            </div>
+            <h3 style={{ fontSize: "1.25rem", fontWeight: 700, color: alertModal.type === "success" ? "#10B981" : alertModal.type === "warning" ? "#F59E0B" : alertModal.type === "info" ? "#3B82F6" : "#EF4444", marginBottom: "0.5rem" }}>
+              {alertModal.title || (alertModal.type === "success" ? "ทำรายการสำเร็จ" : alertModal.type === "warning" ? "แจ้งเตือน" : alertModal.type === "info" ? "แจ้งเตือน" : "เกิดข้อผิดพลาด")}
+            </h3>
+            <p style={{ fontSize: "0.95rem", color: "#cbd5e1", whiteSpace: "pre-line", lineHeight: "1.5", marginBottom: "1.5rem" }}>
+              {alertModal.message}
+            </p>
+            <button
+              type="button"
+              className="btn btn--primary"
+              onClick={() => setAlertModal((prev) => ({ ...prev, show: false }))}
+              style={{ minWidth: "130px", padding: "0.6rem 1.6rem", borderRadius: "10px", fontWeight: 600, margin: "0 auto", background: alertModal.type === "success" ? "linear-gradient(135deg, #10B981, #059669)" : alertModal.type === "warning" ? "linear-gradient(135deg, #F59E0B, #D97706)" : alertModal.type === "info" ? "linear-gradient(135deg, #3B82F6, #2563EB)" : "linear-gradient(135deg, #EF4444, #DC2626)" }}
+            >
+              ตกลง (OK)
+            </button>
           </div>
         </div>
       )}

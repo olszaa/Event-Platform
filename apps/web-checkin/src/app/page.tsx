@@ -190,7 +190,11 @@ export default function CheckinPage() {
     await performCheckin(qrCode);
   }
 
+  const [checkingIn, setCheckingIn] = useState(false);
+
   async function performCheckin(qrCode: string) {
+    if (checkingIn) return;
+    setCheckingIn(true);
     // Fallback to active check-in point if none selected
     let pointId = selectedPoint;
     if (!pointId && checkpoints.length > 0) {
@@ -224,6 +228,8 @@ export default function CheckinPage() {
       }
     } catch {
       setLastCheckin({ success: false, error: "ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้" });
+    } finally {
+      setCheckingIn(false);
     }
 
     // Auto-clear result after 3s
@@ -238,6 +244,8 @@ export default function CheckinPage() {
   }
 
   async function checkinByRegistration(regId: string) {
+    if (checkingIn) return;
+    setCheckingIn(true);
     let pointId = selectedPoint;
     if (!pointId && checkpoints.length > 0) {
       const activePoint = checkpoints.find((cp) => cp.isActive !== false) || checkpoints[0];
@@ -271,6 +279,8 @@ export default function CheckinPage() {
       }
     } catch {
       setLastCheckin({ success: false, error: "ไม่สามารถเช็กอินได้" });
+    } finally {
+      setCheckingIn(false);
     }
     setTimeout(() => setLastCheckin(null), 3000);
   }
