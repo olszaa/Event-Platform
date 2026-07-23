@@ -10,6 +10,7 @@
     "dev:admin": "turbo run dev --filter=@event-platform/web-admin",
     "dev:luckydraw": "turbo run dev --filter=@event-platform/web-luckydraw",
     "build": "turbo run build",
+    "build:render": "./render-build.sh",
     "test:automation": "tsx tests/run-automation-tests.ts",
     "test:automation:test": "tsx tests/run-automation-tests.ts test",
     "test:automation:prod": "tsx tests/run-automation-tests.ts prod",
