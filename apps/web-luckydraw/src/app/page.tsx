@@ -36,6 +36,9 @@ interface Winner {
   fullName: string;
   department?: string;
   company?: string;
+  runningNumber?: string;
+  ticketNumber?: string;
+  luckyDrawNumber?: string;
   prizeName: string;
 }
 
@@ -722,8 +725,27 @@ export default function LuckyDrawPage() {
             {/* Single Winner Display */}
             {winners.length === 1 ? (
               <div style={{ textAlign: "center" }}>
+                {(winners[0]!.runningNumber || winners[0]!.ticketNumber || winners[0]!.luckyDrawNumber) && (
+                  <div
+                    style={{
+                      display: "inline-block",
+                      padding: "var(--space-2) var(--space-6)",
+                      background: "linear-gradient(135deg, #f59e0b, #d97706)",
+                      color: "#fff",
+                      borderRadius: "var(--radius-full)",
+                      fontSize: "var(--text-2xl)",
+                      fontWeight: 800,
+                      marginBottom: "var(--space-3)",
+                      boxShadow: "0 4px 15px rgba(245, 158, 11, 0.4)",
+                    }}
+                  >
+                    🎟️ {winners[0]!.runningNumber || winners[0]!.ticketNumber || winners[0]!.luckyDrawNumber}
+                  </div>
+                )}
                 <div className="draw-winner__name">{winners[0]!.fullName}</div>
-                {winners[0]!.department && <div className="draw-winner__dept">{winners[0]!.department}</div>}
+                {(winners[0]!.department || winners[0]!.company) && (
+                  <div className="draw-winner__dept">{winners[0]!.department || winners[0]!.company}</div>
+                )}
                 <div className="draw-winner__prize">🎁 {winners[0]!.prizeName}</div>
               </div>
             ) : (
@@ -754,12 +776,29 @@ export default function LuckyDrawPage() {
                     <div style={{ fontSize: "var(--text-xs)", color: "var(--color-accent-light)", fontWeight: 700, marginBottom: "var(--space-1)" }}>
                       ลำดับที่ {i + 1}
                     </div>
+                    {(w.runningNumber || w.ticketNumber || w.luckyDrawNumber) && (
+                      <div
+                        style={{
+                          display: "inline-block",
+                          padding: "2px 10px",
+                          background: "rgba(245, 158, 11, 0.2)",
+                          border: "1px solid #f59e0b",
+                          borderRadius: "12px",
+                          color: "#fbbf24",
+                          fontSize: "var(--text-sm)",
+                          fontWeight: 800,
+                          marginBottom: "var(--space-2)",
+                        }}
+                      >
+                        🎟️ {w.runningNumber || w.ticketNumber || w.luckyDrawNumber}
+                      </div>
+                    )}
                     <div style={{ fontSize: "var(--text-xl)", fontWeight: 800, color: "#fff", marginBottom: "var(--space-1)" }}>
                       {w.fullName}
                     </div>
-                    {w.department && (
+                    {(w.department || w.company) && (
                       <div style={{ fontSize: "var(--text-sm)", color: "var(--text-secondary)", marginBottom: "var(--space-2)" }}>
-                        {w.department}
+                        {w.department || w.company}
                       </div>
                     )}
                     <div style={{ fontSize: "var(--text-xs)", color: "var(--color-primary-light)" }}>

@@ -11,6 +11,7 @@ interface CheckinResult {
   success: boolean;
   fullName?: string;
   department?: string;
+  runningNumber?: string;
   message?: string;
   alreadyCheckedIn?: boolean;
   error?: string;
@@ -213,7 +214,8 @@ export default function CheckinPage() {
         setLastCheckin({
           success: true,
           fullName: reg.fullName,
-          department: reg.department,
+          department: reg.department || reg.company,
+          runningNumber: reg.runningNumber || reg.ticketNumber || reg.luckyDrawNumber,
           message: data.alreadyCheckedIn ? "เช็กอินไปแล้ว" : "เช็กอินสำเร็จ!",
           alreadyCheckedIn: data.alreadyCheckedIn,
         });
@@ -225,7 +227,7 @@ export default function CheckinPage() {
     }
 
     // Auto-clear result after 3s
-    setTimeout(() => setLastCheckin(null), 3000);
+    setTimeout(() => setLastCheckin(null), 4000);
   }
 
   async function handleSearch() {
@@ -257,7 +259,8 @@ export default function CheckinPage() {
         setLastCheckin({
           success: true,
           fullName: reg.fullName,
-          department: reg.department,
+          department: reg.department || reg.company,
+          runningNumber: reg.runningNumber || reg.ticketNumber || reg.luckyDrawNumber,
           message: data.alreadyCheckedIn ? "เช็กอินไปแล้ว" : "เช็กอินสำเร็จ!",
           alreadyCheckedIn: data.alreadyCheckedIn,
         });
@@ -505,8 +508,25 @@ export default function CheckinPage() {
                     </div>
                   )}
                   {lastCheckin.department && (
-                    <div style={{ fontSize: "var(--text-base)", opacity: 0.8 }}>
+                    <div style={{ fontSize: "var(--text-base)", opacity: 0.85, marginBottom: "var(--space-2)" }}>
                       {lastCheckin.department}
+                    </div>
+                  )}
+                  {lastCheckin.runningNumber && (
+                    <div
+                      style={{
+                        margin: "var(--space-2) auto",
+                        padding: "var(--space-2) var(--space-6)",
+                        background: "rgba(255,255,255,0.25)",
+                        backdropFilter: "blur(8px)",
+                        borderRadius: "var(--radius-lg)",
+                        fontSize: "var(--text-2xl)",
+                        fontWeight: 800,
+                        letterSpacing: "1px",
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                      }}
+                    >
+                      🎟️ {lastCheckin.runningNumber}
                     </div>
                   )}
                   {lastCheckin.error && (

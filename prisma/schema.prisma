@@ -44,35 +44,44 @@ enum EventStatus {
 // Registration
 // ===================================
 model Registration {
-  id           String             @id @default(cuid())
-  eventId      String
-  fullName     String
-  email        String?
-  phone        String?
-  company      String?
-  department   String?
-  employeeType String?
-  groupName    String?
-  groupId      String?
-  qrCode       String             @unique
-  qrDataUrl    String?            @db.Text
-  status       RegistrationStatus @default(REGISTERED)
-  metadata     Json?              @default("{}")
-  createdAt    DateTime           @default(now())
-  updatedAt    DateTime           @updatedAt
+  id              String             @id @default(cuid())
+  eventId         String
+  fullName        String
+  email           String?
+  phone           String?
+  company         String?
+  department      String?
+  employeeType    String?
+  groupName       String?
+  groupId         String?
+  qrCode          String
+  qrDataUrl       String?            @db.Text
+  runningNumber   String?
+  ticketNumber    String?
+  luckyDrawNumber String?
+  status          RegistrationStatus @default(REGISTERED)
+  metadata        Json?              @default("{}")
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
 
   event        Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
   groupMembers GroupMember[]
   checkins     Checkin[]
   drawWinners  DrawWinner[]
 
+  @@unique([eventId, qrCode])
+  @@unique([eventId, ticketNumber])
+  @@unique([eventId, luckyDrawNumber])
   @@index([eventId])
   @@index([qrCode])
   @@index([groupId])
+  @@index([runningNumber])
   @@map("registrations")
 }
 
 enum RegistrationStatus {
+  PENDING_APPROVAL
+  APPROVED
   REGISTERED
   CONFIRMED
   CHECKED_IN
@@ -101,13 +110,16 @@ model GroupMember {
 // Checkin Point (multi-checkpoint)
 // ===================================
 model CheckinPoint {
-  id       String  @id @default(cuid())
-  eventId  String
-  name     String
-  location String?
-  isActive Boolean @default(true)
-  sortOrder Int    @default(0)
-  createdAt DateTime @default(now())
+  id            String   @id @default(cuid())
+  eventId       String
+  name          String
+  location      String?
+  prefix        String   @default("A")
+  numberPadding Int      @default(5)
+  currentSeq    Int      @default(0)
+  isActive      Boolean  @default(true)
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
 
   event    Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
   checkins Checkin[]

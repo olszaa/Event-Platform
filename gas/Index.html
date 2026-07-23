@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบลงทะเบียนเข้าร่วมงาน (Event Registration)</title>
+  <!-- Google Fonts & QR Code Library -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  
+  <style>
+    :root {
+      --primary: #1E3A8A;
+      --primary-light: #2563EB;
+      --accent: #F59E0B;
+      --bg-dark: #0F172A;
+      --card-bg: #FFFFFF;
+      --text-main: #1E293B;
+      --text-muted: #64748B;
+      --border-color: #E2E8F0;
+      --success: #10B981;
+      --warning: #F59E0B;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Kanit', sans-serif;
+    }
+
+    body {
+      background-color: #F8FAFC;
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top Navigation Bar */
+    header {
+      background: linear-gradient(135deg, var(--bg-dark), var(--primary));
+      color: white;
+      padding: 1.2rem 1.5rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-container {
+      max-width: 900px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .brand-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      text-align: center;
+      letter-spacing: 0.5px;
+    }
+
+    /* Navigation Tabs */
+    .nav-tabs {
+      display: flex;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      padding: 4px;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 500px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 0.6rem 0.5rem;
+      border: none;
+      background: transparent;
+      color: #CBD5E1;
+      font-size: 0.9rem;
+      font-weight: 500;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-align: center;
+    }
+
+    .tab-btn.active {
+      background: var(--card-bg);
+      color: var(--primary);
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    /* Main Content Area */
+    main {
+      flex: 1;
+      max-width: 900px;
+      width: 100%;
+      margin: 1.5rem auto;
+      padding: 0 1rem;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+      animation: fadeIn 0.4s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Card Component */
+    .card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+      border: 1px solid var(--border-color);
+    }
+
+    .card-header {
+      margin-bottom: 1.5rem;
+      text-align: center;
+    }
+
+    .card-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--primary);
+    }
+
+    .card-subtitle {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* Closed Registration Banner */
+    .closed-banner {
+      background: #FEF2F2;
+      border: 2px dashed #EF4444;
+      border-radius: 12px;
+      padding: 2.5rem;
+      text-align: center;
+      color: #991B1B;
+    }
+
+    .closed-banner h3 {
+      font-size: 1.4rem;
+      margin-bottom: 0.5rem;
+    }
+
+    /* Form Inputs */
+    .form-group {
+      margin-bottom: 1.2rem;
+    }
+
+    .form-label {
+      display: block;
+      font-weight: 500;
+      margin-bottom: 0.4rem;
+      font-size: 0.95rem;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 1.5px solid var(--border-color);
+      border-radius: 8px;
+      font-size: 1rem;
+      transition: border-color 0.2s ease;
+      background: #FAFAFA;
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: var(--primary-light);
+      background: #FFFFFF;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .btn-submit {
+      width: 100%;
+      padding: 0.85rem;
+      background: linear-gradient(135deg, var(--primary), var(--primary-light));
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1.05rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      margin-top: 1rem;
+    }
+
+    .btn-submit:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+
+    /* Status Badge */
+    .badge {
+      display: inline-block;
+      padding: 0.35rem 0.8rem;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .badge-pending { background: #FEF3C7; color: #92400E; }
+    .badge-approved { background: #D1FAE5; color: #065F46; }
+    .badge-checkedin { background: #DBEAFE; color: #1E40AF; }
+
+    /* Modal / Alert Box */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.75);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      padding: 1rem;
+    }
+
+    .modal-card {
+      background: white;
+      border-radius: 20px;
+      max-width: 480px;
+      width: 100%;
+      padding: 2rem;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+      position: relative;
+    }
+
+    .modal-warning {
+      background: #FFFBEB;
+      border: 1px solid #FCD34D;
+      border-radius: 10px;
+      padding: 0.8rem;
+      margin: 1rem 0;
+      font-size: 0.9rem;
+      color: #92400E;
+      font-weight: 600;
+    }
+
+    .qr-box {
+      display: flex;
+      justify-content: center;
+      margin: 1.2rem 0;
+    }
+
+    .btn-close {
+      background: var(--text-muted);
+      color: white;
+      border: none;
+      padding: 0.6rem 1.5rem;
+      border-radius: 8px;
+      font-weight: 500;
+      cursor: pointer;
+      margin-top: 1rem;
+    }
+
+    /* Winner Table */
+    .winner-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+
+    .winner-table th, .winner-table td {
+      padding: 0.75rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .winner-table th {
+      background: #F1F5F9;
+      color: var(--primary);
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-container">
+      <div class="brand-title">🎉 ระบบลงทะเบียนเข้าร่วมงาน (Event Registration)</div>
+      <div class="nav-tabs">
+        <button class="tab-btn active" onclick="switchTab('register')">1. ลงทะเบียน</button>
+        <button class="tab-btn" onclick="switchTab('track')">2. ติดตามสถานะ</button>
+        <button class="tab-btn" onclick="switchTab('winners')">3. ประกาศผลรางวัล</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- Tab 1: ลงทะเบียน (Register) -->
+    <div id="tab-register" class="tab-content active">
+      <div class="card">
+        <div id="reg-form-container">
+          <div class="card-header">
+            <h2 class="card-title">ฟอร์มลงทะเบียนเข้าร่วมงาน</h2>
+            <p class="card-subtitle">กรุณากรอกข้อมูลส่วนตัวเพื่อรับ QR Code สำหรับ Check-in หน้างาน</p>
+          </div>
+
+          <form id="regForm" onsubmit="handleRegister(event)">
+            <div class="form-group">
+              <label class="form-label">ชื่อ-นามสกุล <span style="color:red">*</span></label>
+              <input type="text" id="fullName" class="form-control" placeholder="เช่น นายสมชาย ใจดี" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">อีเมล</label>
+              <input type="email" id="email" class="form-control" placeholder="example@email.com">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">เบอร์โทรศัพท์ <span style="color:red">*</span></label>
+              <input type="tel" id="phone" class="form-control" placeholder="0812345678" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">บริษัท / หน่วยงาน / องค์กร <span style="color:red">*</span></label>
+              <select id="company" class="form-control" required>
+                <option value="">-- กำลังโหลดรายชื่อหน่วยงาน... --</option>
+              </select>
+            </div>
+
+            <button type="submit" id="btnSubmitReg" class="btn-submit">ยืนยันลงทะเบียน</button>
+          </form>
+        </div>
+
+        <!-- Closed Banner (Hidden by default) -->
+        <div id="closed-container" class="closed-banner" style="display:none;">
+          <h3>🚫 ปิดรับลงทะเบียนแล้ว</h3>
+          <p>ระบบปิดรับการลงทะเบียนสำหรับงานนี้แล้ว หากท่านลงทะเบียนไว้แล้ว สามารถไปที่เมนู <b>"ติดตามสถานะ"</b> ได้ครับ</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 2: ติดตามสถานะการลงทะเบียน (Track Status) -->
+    <div id="tab-track" class="tab-content">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">ติดตามสถานะการลงทะเบียน</h2>
+          <p class="card-subtitle">สแกน QR Code หรือ กรอก รหัส QR Code / เบอร์โทรศัพท์ / อีเมล เพื่อตรวจสอบสถานะ</p>
+        </div>
+
+        <!-- Mode Options -->
+        <div style="display: flex; gap: 8px; margin-bottom: 1.5rem; justify-content: center; flex-wrap: wrap;">
+          <button id="btnScanMode" onclick="startQRScanner()" class="btn-submit" style="margin-top:0; flex:1; min-width: 140px; background: linear-gradient(135deg, #2563EB, #1D4ED8);">
+            📷 เปิดกล้องสแกน
+          </button>
+          <button onclick="document.getElementById('qr-file-input').click()" class="btn-submit" style="margin-top:0; flex:1; min-width: 140px; background: linear-gradient(135deg, #059669, #10B981);">
+            🖼️ เลือกรูป QR Code
+          </button>
+          <input type="file" id="qr-file-input" accept="image/*" style="display:none" onchange="handleQRFileSelected(this)">
+        </div>
+
+        <!-- Camera Scanner Area (Hidden by default) -->
+        <div id="qr-reader-container" style="display: none; margin-bottom: 1.5rem; text-align: center;">
+          <div id="reader" style="width: 100%; max-width: 400px; margin: 0 auto; border-radius: 12px; overflow: hidden; border: 2px solid var(--primary-light);"></div>
+          <button onclick="stopQRScanner()" class="btn-close" style="margin-top: 10px; background: #EF4444;">ปิดกล้องสแกน</button>
+        </div>
+
+        <!-- Text Input Search Box -->
+        <div style="display: flex; gap: 8px; margin-bottom: 1.5rem;">
+          <input type="text" id="searchQuery" class="form-control" placeholder="พิมพ์ รหัส QR Code (เช่น EVT-123456), เบอร์โทร หรือ อีเมล">
+          <button onclick="handleTrackStatus()" class="btn-submit" style="width: 130px; margin-top:0;">ค้นหา</button>
+        </div>
+
+        <div id="trackResult" style="display: none; background: #F8FAFC; border-radius: 12px; padding: 1.5rem; border: 1px solid var(--border-color);">
+          <!-- Dynamic Status Result -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 3: ประกาศผลรางวัล (Winners) -->
+    <div id="tab-winners" class="tab-content">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">🏆 ประกาศผลรางวัล Lucky Draw</h2>
+          <p class="card-subtitle">รายชื่อผู้โชคดีที่ได้รับรางวัลจากการสุ่มจับรางวัล</p>
+        </div>
+
+        <div id="winnersContainer">
+          <p style="text-align: center; color: var(--text-muted); padding: 2rem;">กำลังโหลดข้อมูลผู้โชคดี...</p>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Modal Success & Download QR Code -->
+  <div id="successModal" class="modal-overlay">
+    <div class="modal-card">
+      <h2 style="color: var(--success); margin-bottom: 0.5rem;">ลงทะเบียนสำเร็จ! 🎉</h2>
+      <p style="color: var(--text-muted);">รหัสการลงทะเบียนของคุณคือ: <b id="modalQrText" style="color: var(--primary);">EVT-000000</b></p>
+      
+      <div class="modal-warning">
+        ⚠️ <b>โปรดบันทึก QR Code</b> สำหรับติดตามสถานะ และใช้ Check-in เข้าร่วมงาน
+      </div>
+
+      <div class="qr-box">
+        <div id="qrcode"></div>
+      </div>
+
+      <button onclick="downloadQRCode('qrcode', document.getElementById('modalQrText').textContent)" class="btn-submit" style="margin-top: 0.5rem; background: linear-gradient(135deg, #10B981, #059669);">
+        📥 ดาวน์โหลด / บันทึกภาพ QR Code
+      </button>
+
+      <br>
+      <button onclick="closeModal()" class="btn-close">ปิดหน้าต่าง</button>
+    </div>
+  </div>
+
+  <script>
+    // Initialize Page
+    document.addEventListener("DOMContentLoaded", function() {
+      loadClubList();
+      checkRegStatus();
+    });
+
+    // Switch Navigation Tabs
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+      
+      if (tabName === 'register') {
+        document.querySelectorAll('.tab-btn')[0].classList.add('active');
+        document.getElementById('tab-register').classList.add('active');
+      } else if (tabName === 'track') {
+        document.querySelectorAll('.tab-btn')[1].classList.add('active');
+        document.getElementById('tab-track').classList.add('active');
+      } else if (tabName === 'winners') {
+        document.querySelectorAll('.tab-btn')[2].classList.add('active');
+        document.getElementById('tab-winners').classList.add('active');
+        loadWinners();
+      }
+    }
+
+    // Load Company Dropdown
+    function loadClubList() {
+      google.script.run
+        .withSuccessHandler(function(clubs) {
+          const select = document.getElementById('company');
+          select.innerHTML = '<option value="">-- กรุณาเลือกบริษัท / หน่วยงาน / องค์กร --</option>';
+          clubs.forEach(function(c) {
+            const opt = document.createElement('option');
+            opt.value = c;
+            opt.textContent = c;
+            select.appendChild(opt);
+          });
+        })
+        .getClubList();
+    }
+
+    // Check Open/Close Registration Status
+    function checkRegStatus() {
+      google.script.run
+        .withSuccessHandler(function(res) {
+          if (!res.isOpen) {
+            document.getElementById('reg-form-container').style.display = 'none';
+            document.getElementById('closed-container').style.display = 'block';
+          }
+        })
+        .getRegistrationStatus();
+    }
+
+    // Handle Form Submit
+    function handleRegister(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btnSubmitReg');
+      btn.disabled = true;
+      btn.textContent = "กำลังลงทะเบียน...";
+
+      const formData = {
+        fullName: document.getElementById('fullName').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        phone: document.getElementById('phone').value.trim(),
+        company: document.getElementById('company').value
+      };
+
+      google.script.run
+        .withSuccessHandler(function(res) {
+          btn.disabled = false;
+          btn.textContent = "ยืนยันลงทะเบียน";
+
+          if (res.success) {
+            showSuccessModal(res.data.qrCode);
+            document.getElementById('regForm').reset();
+          } else {
+            alert("เกิดข้อผิดพลาด: " + res.error);
+          }
+        })
+        .withFailureHandler(function(err) {
+          btn.disabled = false;
+          btn.textContent = "ยืนยันลงทะเบียน";
+          alert("ไม่สามารถลงทะเบียนได้: " + err.message);
+        })
+        .registerUser(formData);
+    }
+
+    // Show Success Modal with QR Code
+    function showSuccessModal(qrCode) {
+      document.getElementById('modalQrText').textContent = qrCode;
+      const qrBox = document.getElementById('qrcode');
+      qrBox.innerHTML = "";
+      new QRCode(qrBox, {
+        text: qrCode,
+        width: 180,
+        height: 180
+      });
+      document.getElementById('successModal').style.display = 'flex';
+    }
+
+    function closeModal() {
+      document.getElementById('successModal').style.display = 'none';
+    }
+
+    // Download QR Code Function
+    function downloadQRCode(containerId, filename) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+
+      const img = container.querySelector('img');
+      const canvas = container.querySelector('canvas');
+
+      let dataUrl = "";
+      if (img && img.src) {
+        dataUrl = img.src;
+      } else if (canvas) {
+        dataUrl = canvas.toDataURL("image/png");
+      }
+
+      if (!dataUrl) {
+        alert("ไม่สามารถสร้างไฟล์ภาพ QR Code ได้");
+        return;
+      }
+
+      const link = document.createElement("a");
+      link.href = dataUrl;
+      link.download = (filename || "QR_Code") + ".png";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    let html5QrCodeScanner = null;
+
+    function startQRScanner() {
+      const container = document.getElementById('qr-reader-container');
+      container.style.display = 'block';
+
+      if (!html5QrCodeScanner) {
+        html5QrCodeScanner = new Html5Qrcode("reader");
+      }
+
+      html5QrCodeScanner.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: { width: 220, height: 220 } },
+        function onScanSuccess(decodedText) {
+          stopQRScanner();
+          let qrVal = decodedText;
+          try {
+            const url = new URL(decodedText);
+            qrVal = url.searchParams.get("code") || decodedText;
+          } catch (e) {}
+
+          document.getElementById('searchQuery').value = qrVal;
+          handleTrackStatus(qrVal);
+        },
+        function onScanError(error) {
+          // Frame scan error, ignore
+        }
+      ).catch(function(err) {
+        container.style.display = 'none';
+        alert("⚠️ ไม่สามารถเปิดกล้องได้ (" + err + ")\n\nสาเหตุอาจเกิดจากสิทธิ์การใช้งานกล้องถูกบล็อกในเบราว์เซอร์\n\nวิธีแก้ไข:\n1. กดที่ไอคอน 🔒 (รูปแม่กุญแจ) ข้างแถบ URL ด้านบนสุด\n2. เปลี่ยนสิทธิ์ 'กล้อง (Camera)' เป็น 'อนุญาต (Allow)'\n3. หรือกดปุ่ม '🖼️ เลือกรูป QR Code' เพื่อเลือกรูปแทนได้ครับ");
+      });
+    }
+
+    function handleQRFileSelected(input) {
+      if (!input.files || input.files.length === 0) return;
+      const file = input.files[0];
+
+      if (!html5QrCodeScanner) {
+        html5QrCodeScanner = new Html5Qrcode("reader");
+      }
+
+      const resBox = document.getElementById('trackResult');
+      resBox.style.display = 'block';
+      resBox.innerHTML = '<p style="text-align:center;">กำลังอ่านข้อมูลจากรูปภาพ QR Code...</p>';
+
+      html5QrCodeScanner.scanFile(file, true)
+        .then(function(decodedText) {
+          let qrVal = decodedText;
+          try {
+            const url = new URL(decodedText);
+            qrVal = url.searchParams.get("code") || decodedText;
+          } catch (e) {}
+
+          document.getElementById('searchQuery').value = qrVal;
+          handleTrackStatus(qrVal);
+        })
+        .catch(function(err) {
+          alert("ไม่พบรหัส QR Code ในรูปภาพนี้ หรือรูปภาพไม่ชัดเจน กรุณาลองใหม่อีกครั้ง");
+          resBox.style.display = 'none';
+        });
+    }
+
+    function stopQRScanner() {
+      if (html5QrCodeScanner && html5QrCodeScanner.isScanning) {
+        html5QrCodeScanner.stop().then(function() {
+          document.getElementById('qr-reader-container').style.display = 'none';
+        }).catch(function() {
+          document.getElementById('qr-reader-container').style.display = 'none';
+        });
+      } else {
+        document.getElementById('qr-reader-container').style.display = 'none';
+      }
+    }
+
+    // Handle Status Search
+    function handleTrackStatus(overrideQuery) {
+      const query = overrideQuery || document.getElementById('searchQuery').value.trim();
+      if (!query) {
+        alert("กรุณากรอกหรือสแกน QR Code เพื่อค้นหา");
+        return;
+      }
+
+      const resBox = document.getElementById('trackResult');
+      resBox.style.display = 'block';
+      resBox.innerHTML = '<p style="text-align:center;">กำลังค้นหาข้อมูล...</p>';
+
+      google.script.run
+        .withSuccessHandler(function(res) {
+          if (res.success) {
+            const data = res.data;
+            let badgeClass = "badge-pending";
+            if (data.status === "อนุมัติ") badgeClass = "badge-approved";
+            if (data.status === "check in") badgeClass = "badge-checkedin";
+
+            resBox.innerHTML = `
+              <h3 style="color: var(--primary); margin-bottom: 0.8rem;">ข้อมูลผู้ลงทะเบียน</h3>
+              <p><b>ชื่อ-นามสกุล:</b> ${data.fullName}</p>
+              <p><b>หน่วยงาน:</b> ${data.company}</p>
+              <p><b>เบอร์โทร:</b> ${data.phone}</p>
+              <p><b>สถานะ:</b> <span class="badge ${badgeClass}">${data.status}</span></p>
+              ${data.ticketNumber ? `<p style="margin-top:0.4rem;"><b>Running Number:</b> <span style="font-weight:700; color:var(--primary);">${data.ticketNumber}</span></p>` : ''}
+              <div style="margin-top: 1rem; text-align: center;">
+                <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:0.4rem;">QR Code สำหรับ Check-in หน้างาน</p>
+                <div id="trackQrBox" style="display:inline-block;"></div>
+                <div style="margin-top: 8px;">
+                  <button onclick="downloadQRCode('trackQrBox', '${data.qrCode}')" class="btn-submit" style="width: auto; padding: 0.45rem 1.2rem; font-size: 0.9rem; margin-top:0; background: linear-gradient(135deg, #10B981, #059669);">
+                    📥 ดาวน์โหลด / บันทึกภาพ QR Code
+                  </button>
+                </div>
+              </div>
+            `;
+            new QRCode(document.getElementById('trackQrBox'), {
+              text: data.qrCode,
+              width: 140,
+              height: 140
+            });
+          } else {
+            resBox.innerHTML = `<p style="color:red; text-align:center;">${res.error}</p>`;
+          }
+        })
+        .checkRegistrationStatus(query);
+    }
+
+    // Load Winner List
+    function loadWinners() {
+      const box = document.getElementById('winnersContainer');
+      box.innerHTML = '<p style="text-align:center;">กำลังโหลดรายชื่อผู้โชคดี...</p>';
+
+      google.script.run
+        .withSuccessHandler(function(winners) {
+          if (!winners || winners.length === 0) {
+            box.innerHTML = '<p style="text-align:center; color:var(--text-muted); padding:2rem;">ยังไม่มีการประกาศรางวัลในขณะนี้</p>';
+            return;
+          }
+
+          let html = `
+            <table class="winner-table">
+              <thead>
+                <tr>
+                  <th>Running Number</th>
+                  <th>ชื่อ-นามสกุล</th>
+                  <th>หน่วยงาน</th>
+                  <th>รางวัลที่ได้รับ</th>
+                </tr>
+              </thead>
+              <tbody>
+          `;
+
+          winners.forEach(function(w) {
+            html += `
+              <tr>
+                <td><b>${w.luckyDrawNumber || w.ticketNumber}</b></td>
+                <td>${w.fullName}</td>
+                <td>${w.company}</td>
+                <td><span style="color:var(--accent); font-weight:600;">🎁 ${w.prizeName}</span></td>
+              </tr>
+            `;
+          });
+
+          html += '</tbody></table>';
+          box.innerHTML = html;
+        })
+        .getWinners();
+    }
+  </script>
+</body>
+</html>

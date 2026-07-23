@@ -52,8 +52,20 @@ export function parseExcel<T extends Record<string, unknown>>(
 
       if (columnMapping) {
         mappedRow = {};
+        const rowNormalized: Record<string, unknown> = {};
+        for (const [k, v] of Object.entries(row)) {
+          rowNormalized[String(k).trim().toLowerCase()] = v;
+        }
+
         for (const [excelHeader, fieldKey] of Object.entries(columnMapping)) {
-          mappedRow[fieldKey] = row[excelHeader] ?? null;
+          if (mappedRow[fieldKey] !== undefined && mappedRow[fieldKey] !== null && mappedRow[fieldKey] !== "") {
+            continue; // Keep existing value from earlier matching header alias
+          }
+          const normKey = String(excelHeader).trim().toLowerCase();
+          const cellVal = row[excelHeader] ?? rowNormalized[normKey];
+          if (cellVal !== undefined && cellVal !== null && String(cellVal).trim() !== "") {
+            mappedRow[fieldKey] = typeof cellVal === "string" ? cellVal.trim() : cellVal;
+          }
         }
       } else {
         mappedRow = row;
@@ -114,6 +126,10 @@ export function generateExcel<T extends Record<string, unknown>>(
  */
 export function getDefaultRegistrationMapping(): Record<string, string> {
   return {
+    "Timestamp": "timestamp",
+    "Registration ID / QR Code": "qrCode",
+    "QR Code": "qrCode",
+    "รหัสลงทะเบียน": "qrCode",
     "ชื่อ-นามสกุล": "fullName",
     "ชื่อ": "fullName",
     "Full Name": "fullName",
@@ -122,11 +138,18 @@ export function getDefaultRegistrationMapping(): Record<string, string> {
     "Email": "email",
     "เบอร์โทร": "phone",
     "Phone": "phone",
+    "บริษัท/หน่วยงาน/องค์กร": "company",
     "บริษัท": "company",
+    "หน่วยงาน": "company",
+    "องค์กร": "company",
     "Company": "company",
     "แผนก": "department",
     "Department": "department",
     "ประเภทพนักงาน": "employeeType",
     "Employee Type": "employeeType",
+    "Ticket Number": "ticketNumber",
+    "Lucky Draw Number": "luckyDrawNumber",
+    "สถานะ": "status",
+    "Status": "status",
   };
 }

@@ -184,7 +184,7 @@ drawsRouter.get(
         winners: {
           include: {
             registration: {
-              select: { id: true, fullName: true, department: true, company: true, employeeType: true },
+              select: { id: true, fullName: true, department: true, company: true, employeeType: true, runningNumber: true, ticketNumber: true, luckyDrawNumber: true },
             },
           },
           orderBy: { drawnAt: "asc" },
@@ -217,7 +217,7 @@ drawsRouter.get(
           where: { status: { in: ["PENDING", "ACCEPTED"] } },
           include: {
             registration: {
-              select: { id: true, fullName: true, department: true },
+              select: { id: true, fullName: true, department: true, company: true, runningNumber: true, ticketNumber: true, luckyDrawNumber: true },
             },
           },
         },

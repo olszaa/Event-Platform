@@ -2,7 +2,13 @@
 // Registration Types
 // ===================================
 
-export type RegistrationStatus = "REGISTERED" | "CONFIRMED" | "CHECKED_IN" | "CANCELLED";
+export type RegistrationStatus =
+  | "PENDING_APPROVAL"
+  | "APPROVED"
+  | "REGISTERED"
+  | "CONFIRMED"
+  | "CHECKED_IN"
+  | "CANCELLED";
 
 export interface Registration {
   id: string;
@@ -17,6 +23,9 @@ export interface Registration {
   groupId?: string | null;
   qrCode: string;
   qrDataUrl?: string | null;
+  runningNumber?: string | null;
+  ticketNumber?: string | null;
+  luckyDrawNumber?: string | null;
   status: RegistrationStatus;
   metadata?: Record<string, unknown> | null;
   createdAt: string;
@@ -51,6 +60,9 @@ export interface CheckinPoint {
   eventId: string;
   name: string;
   location?: string | null;
+  prefix?: string;
+  numberPadding?: number;
+  currentSeq?: number;
   isActive: boolean;
   sortOrder: number;
   createdAt: string;

@@ -55,6 +55,25 @@ export default function AdminPage() {
   });
 
   // Prize Management State
+  const [duplicateModal, setDuplicateModal] = useState<{
+    show: boolean;
+    file: File | null;
+    duplicates: Array<{
+      qrCode: string;
+      rowNumber: number;
+      existing: { fullName: string; email: string; phone: string; company: string; status: string };
+      incoming: { fullName: string; email: string; phone: string; company: string; status: string };
+    }>;
+    selectedQrCodes: Set<string>;
+    newRecordsCount: number;
+  }>({
+    show: false,
+    file: null,
+    duplicates: [],
+    selectedQrCodes: new Set(),
+    newRecordsCount: 0,
+  });
+
   const [isPrizeModalOpen, setIsPrizeModalOpen] = useState(false);
   const [editingPrizeId, setEditingPrizeId] = useState<string | null>(null);
   const [prizeForm, setPrizeForm] = useState({
@@ -538,17 +557,51 @@ export default function AdminPage() {
     window.open(`${API_URL}/api/registrations/export?eventId=${selectedEventId}`, "_blank");
   }
 
-  async function handleImport(file: File) {
+  function handleDownloadTemplate() {
+    window.open(`${API_URL}/api/registrations/template`, "_blank");
+  }
+
+  async function handleImport(
+    file: File,
+    options?: { confirmAll?: boolean; skipAll?: boolean; confirmedQrCodes?: string[] }
+  ) {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("eventId", selectedEventId);
+
+    if (options?.confirmAll) formData.append("confirmDuplicates", "true");
+    if (options?.skipAll) formData.append("skipDuplicates", "true");
+    if (options?.confirmedQrCodes) formData.append("confirmedQrCodes", JSON.stringify(options.confirmedQrCodes));
+
     const res = await fetch(`${API_URL}/api/registrations/import`, { method: "POST", body: formData });
     const data = await res.json();
-    alert(data.success
-      ? `นำเข้าสำเร็จ: ${data.data.imported} รายการ, ข้อผิดพลาด: ${data.data.errors}`
-      : `เกิดข้อผิดพลาด: ${data.error}`);
+
+    if (data.success && data.hasDuplicates) {
+      setDuplicateModal({
+        show: true,
+        file: file,
+        duplicates: data.duplicates,
+        selectedQrCodes: new Set(data.duplicates.map((d: any) => d.qrCode)),
+        newRecordsCount: data.newRecordsCount || 0,
+      });
+      return;
+    }
+
+    if (data.success) {
+      setDuplicateModal((prev) => ({ ...prev, show: false }));
+      const msgParts = [];
+      if (data.data.imported) msgParts.push(`นำเข้าใหม่: ${data.data.imported} รายการ`);
+      if (data.data.updated) msgParts.push(`อัปเดตข้อมูลเดิม: ${data.data.updated} รายการ`);
+      if (data.data.skipped) msgParts.push(`ข้ามรายการซ้ำ: ${data.data.skipped} รายการ`);
+      if (data.data.errors) msgParts.push(`ข้อผิดพลาด: ${data.data.errors} รายการ`);
+
+      alert(`การนำเข้าเสร็จสมบูรณ์ 🎉\n\n${msgParts.join("\n")}`);
+    } else {
+      alert(`เกิดข้อผิดพลาด: ${data.error || "ไม่สามารถนำเข้าข้อมูลได้"}`);
+    }
+
     // Reload registrations
-    const r = await fetch(`${API_URL}/api/registrations?eventId=${selectedEventId}&limit=50`);
+    const r = await fetch(`${API_URL}/api/registrations?eventId=${selectedEventId}&limit=50`, { headers: getAuthHeaders() });
     const rd = await r.json();
     if (rd.success) setRegistrations(rd.data);
   }
@@ -907,11 +960,14 @@ export default function AdminPage() {
                 <p className="admin-header__subtitle">{registrations.length} คน</p>
               </div>
               <div className="flex gap-3">
+                <button className="btn btn--outline" onClick={handleDownloadTemplate}>
+                  📄 Download Template
+                </button>
                 <label className="btn btn--secondary" style={{ cursor: "pointer" }}>
                   📥 Import Excel
                   <input
                     type="file"
-                    accept=".xlsx,.xls"
+                    accept=".xlsx,.xls,.csv"
                     style={{ display: "none" }}
                     onChange={(e) => {
                       if (e.target.files?.[0]) handleImport(e.target.files[0]);
@@ -921,40 +977,71 @@ export default function AdminPage() {
                 <button className="btn btn--secondary" onClick={handleExport}>📤 Export Excel</button>
               </div>
             </div>
-            <div className="table-container">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>ชื่อ-นามสกุล</th>
-                    <th>อีเมล</th>
-                    <th>เบอร์โทร</th>
-                    <th>บริษัท</th>
-                    <th>แผนก</th>
-                    <th>ประเภท</th>
-                    <th>สถานะ</th>
-                    <th>QR Code</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {registrations.map((reg) => (
-                    <tr key={reg.id}>
-                      <td style={{ fontWeight: 600, color: "var(--text-primary)" }}>{reg.fullName}</td>
-                      <td>{reg.email || "-"}</td>
-                      <td>{reg.phone || "-"}</td>
-                      <td>{reg.company || "-"}</td>
-                      <td>{reg.department || "-"}</td>
-                      <td>{reg.employeeType || "-"}</td>
-                      <td>
-                        <span className={`badge badge--${reg.status === "CHECKED_IN" ? "success" : reg.status === "CANCELLED" ? "error" : "primary"}`}>
-                          {reg.status === "CHECKED_IN" ? "✓ เช็กอิน" : reg.status === "CANCELLED" ? "ยกเลิก" : "ลงทะเบียน"}
-                        </span>
-                      </td>
-                      <td style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-xs)" }}>{reg.qrCode}</td>
+
+            {registrations.length === 0 ? (
+              <div className="glass-card flex-center" style={{ padding: "var(--space-12)", textAlign: "center", marginTop: "var(--space-4)" }}>
+                <div>
+                  <div style={{ fontSize: "3.5rem", marginBottom: "var(--space-3)" }}>📋</div>
+                  <h3 style={{ fontSize: "var(--text-xl)", fontWeight: 700, marginBottom: "var(--space-2)" }}>
+                    ยังไม่มีข้อมูลผู้ลงทะเบียนในงานนี้
+                  </h3>
+                  <p style={{ color: "var(--text-secondary)", marginBottom: "var(--space-6)", maxWidth: "480px", margin: "0 auto var(--space-6)" }}>
+                    คุณสามารถนำเข้าข้อมูลผู้ลงทะเบียนได้โดยดาวน์โหลดไฟล์แม่แบบ (Template) แล้วกรอกข้อมูลก่อนนำเข้าเข้าสู่ระบบ
+                  </p>
+                  <div className="flex gap-4 justify-center">
+                    <button className="btn btn--primary" onClick={handleDownloadTemplate}>
+                      📄 ดาวน์โหลด Template Excel
+                    </button>
+                    <label className="btn btn--secondary" style={{ cursor: "pointer" }}>
+                      📥 Import Excel
+                      <input
+                        type="file"
+                        accept=".xlsx,.xls,.csv"
+                        style={{ display: "none" }}
+                        onChange={(e) => {
+                          if (e.target.files?.[0]) handleImport(e.target.files[0]);
+                        }}
+                      />
+                    </label>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="table-container">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>ชื่อ-นามสกุล</th>
+                      <th>อีเมล</th>
+                      <th>เบอร์โทร</th>
+                      <th>บริษัท</th>
+                      <th>แผนก</th>
+                      <th>ประเภท</th>
+                      <th>สถานะ</th>
+                      <th>QR Code</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {registrations.map((reg) => (
+                      <tr key={reg.id}>
+                        <td style={{ fontWeight: 600, color: "var(--text-primary)" }}>{reg.fullName}</td>
+                        <td>{reg.email || "-"}</td>
+                        <td>{reg.phone || "-"}</td>
+                        <td>{reg.company || "-"}</td>
+                        <td>{reg.department || "-"}</td>
+                        <td>{reg.employeeType || "-"}</td>
+                        <td>
+                          <span className={`badge badge--${reg.status === "CHECKED_IN" ? "success" : reg.status === "CANCELLED" ? "error" : "primary"}`}>
+                            {reg.status === "CHECKED_IN" ? "✓ เช็กอิน" : reg.status === "CANCELLED" ? "ยกเลิก" : "ลงทะเบียน"}
+                          </span>
+                        </td>
+                        <td style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-xs)" }}>{reg.qrCode}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
 
@@ -1891,6 +1978,133 @@ export default function AdminPage() {
           </div>
         </form>
       </Modal>
+
+      {/* Modal Alert & Confirm Duplicate Registrations */}
+      {duplicateModal.show && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.65)", backdropFilter: "blur(4px)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
+          <div className="glass-card" style={{ maxWidth: "850px", width: "100%", maxHeight: "90vh", overflowY: "auto", background: "var(--bg-primary)", padding: "1.5rem", borderRadius: "16px", border: "1px solid var(--border-color)", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.5)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+              <h2 style={{ fontSize: "1.25rem", fontWeight: 700, color: "#F59E0B", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                ⚠️ พบรายการซ้ำในงานนี้ ({duplicateModal.duplicates.length} รายการ)
+              </h2>
+              <button
+                className="btn btn--outline"
+                style={{ padding: "0.2rem 0.5rem", fontSize: "0.8rem" }}
+                onClick={() => setDuplicateModal((prev) => ({ ...prev, show: false }))}
+              >
+                ✕ ปิดหน้าต่าง
+              </button>
+            </div>
+            <p style={{ fontSize: "0.9rem", color: "var(--text-secondary)", marginBottom: "1.2rem", lineHeight: "1.5" }}>
+              ระบบตรวจพบรหัส QR Code ที่ซ้ำกับผู้ลงทะเบียนที่มีอยู่แล้วในงานนี้ คุณสามารถเลือกว่าต้องการ <b>อัปเดตข้อมูลเดิม</b> หรือ <b>ข้ามรายการซ้ำ</b> ได้ครับ
+              {duplicateModal.newRecordsCount > 0 && <span style={{ color: "var(--success)", fontWeight: 600 }}> (ส่วนรายการใหม่ที่ไม่ซ้ำอีก {duplicateModal.newRecordsCount} รายการจะถูกนำเข้าตามปกติ)</span>}
+            </p>
+
+            {/* Table of Duplicates */}
+            <div style={{ overflowX: "auto", marginBottom: "1.5rem", border: "1px solid var(--border-color)", borderRadius: "8px", background: "var(--bg-secondary)" }}>
+              <table className="table" style={{ fontSize: "0.85rem", width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ background: "var(--bg-tertiary)" }}>
+                    <th style={{ width: "45px", textAlign: "center" }}>
+                      <input
+                        type="checkbox"
+                        checked={duplicateModal.selectedQrCodes.size === duplicateModal.duplicates.length && duplicateModal.duplicates.length > 0}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setDuplicateModal((prev) => ({
+                              ...prev,
+                              selectedQrCodes: new Set(prev.duplicates.map((d) => d.qrCode)),
+                            }));
+                          } else {
+                            setDuplicateModal((prev) => ({ ...prev, selectedQrCodes: new Set() }));
+                          }
+                        }}
+                        style={{ width: "16px", height: "16px", cursor: "pointer" }}
+                      />
+                    </th>
+                    <th>รหัส QR Code</th>
+                    <th>ข้อมูลเดิม (ในระบบ)</th>
+                    <th>ข้อมูลใหม่ (จากไฟล์)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {duplicateModal.duplicates.map((dup) => (
+                    <tr key={dup.qrCode} style={{ borderBottom: "1px solid var(--border-color)" }}>
+                      <td style={{ textAlign: "center" }}>
+                        <input
+                          type="checkbox"
+                          checked={duplicateModal.selectedQrCodes.has(dup.qrCode)}
+                          onChange={(e) => {
+                            const newSet = new Set(duplicateModal.selectedQrCodes);
+                            if (e.target.checked) newSet.add(dup.qrCode);
+                            else newSet.delete(dup.qrCode);
+                            setDuplicateModal((prev) => ({ ...prev, selectedQrCodes: newSet }));
+                          }}
+                          style={{ width: "16px", height: "16px", cursor: "pointer" }}
+                        />
+                      </td>
+                      <td style={{ fontFamily: "var(--font-mono)", fontWeight: 700, color: "var(--primary)" }}>{dup.qrCode}</td>
+                      <td style={{ padding: "0.6rem" }}>
+                        <div style={{ fontWeight: 600, color: "var(--text-primary)" }}>{dup.existing.fullName}</div>
+                        <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>📞 {dup.existing.phone} | 🏢 {dup.existing.company}</div>
+                      </td>
+                      <td style={{ padding: "0.6rem" }}>
+                        <div style={{ fontWeight: 600, color: "#10B981" }}>{dup.incoming.fullName}</div>
+                        <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>📞 {dup.incoming.phone} | 🏢 {dup.incoming.company}</div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Modal Actions */}
+            <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end", flexWrap: "wrap", alignItems: "center" }}>
+              <button
+                className="btn btn--outline"
+                onClick={() => setDuplicateModal((prev) => ({ ...prev, show: false }))}
+              >
+                ❌ ยกเลิกการนำเข้า
+              </button>
+              <button
+                className="btn btn--secondary"
+                onClick={() => {
+                  if (duplicateModal.file) {
+                    handleImport(duplicateModal.file, { skipAll: true });
+                  }
+                }}
+              >
+                ⏭️ ข้ามรายการซ้ำทั้งหมด
+              </button>
+              <button
+                className="btn btn--primary"
+                style={{ background: duplicateModal.selectedQrCodes.size > 0 ? "linear-gradient(135deg, #059669, #10B981)" : "#9CA3AF" }}
+                disabled={duplicateModal.selectedQrCodes.size === 0}
+                onClick={() => {
+                  if (duplicateModal.file) {
+                    handleImport(duplicateModal.file, {
+                      confirmedQrCodes: Array.from(duplicateModal.selectedQrCodes),
+                    });
+                  }
+                }}
+              >
+                ✅ ยืนยันตามรายการที่เลือก ({duplicateModal.selectedQrCodes.size})
+              </button>
+              <button
+                className="btn btn--primary"
+                style={{ background: "linear-gradient(135deg, #2563EB, #1D4ED8)" }}
+                onClick={() => {
+                  if (duplicateModal.file) {
+                    handleImport(duplicateModal.file, { confirmAll: true });
+                  }
+                }}
+              >
+                ⚡ ยืนยันทั้งหมด ({duplicateModal.duplicates.length})
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

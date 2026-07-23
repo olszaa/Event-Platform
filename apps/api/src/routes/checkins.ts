@@ -18,7 +18,7 @@ checkinsRouter.post(
     // Find registration first to validate and get eventId if pointId missing
     let reg;
     if (qrCode) {
-      reg = await prisma.registration.findUnique({
+      reg = await prisma.registration.findFirst({
         where: { qrCode },
         include: { event: true, checkins: true },
       });
@@ -80,6 +80,21 @@ checkinsRouter.post(
     if (!point) throw createError(404, "Checkin point not found");
     if (!point.isActive) throw createError(400, "Checkin point is not active");
 
+    // Calculate Running Number if not already assigned
+    let assignedRunningNumber = reg.runningNumber;
+    if (!assignedRunningNumber) {
+      const nextSeq = point.currentSeq + 1;
+      const pad = point.numberPadding || 5;
+      const prefix = point.prefix || "A";
+      assignedRunningNumber = `${prefix}${String(nextSeq).padStart(pad, "0")}`;
+
+      // Update currentSeq for this checkin point
+      await prisma.checkinPoint.update({
+        where: { id: point.id },
+        data: { currentSeq: nextSeq },
+      });
+    }
+
     // Create checkin
     const checkin = await prisma.checkin.create({
       data: {
@@ -90,10 +105,15 @@ checkinsRouter.post(
       },
     });
 
-    // Update registration status
-    await prisma.registration.update({
+    // Update registration status and running numbers
+    const updatedReg = await prisma.registration.update({
       where: { id: reg.id },
-      data: { status: "CHECKED_IN" },
+      data: {
+        status: "CHECKED_IN",
+        runningNumber: reg.runningNumber || assignedRunningNumber,
+        ticketNumber: reg.ticketNumber || assignedRunningNumber,
+        luckyDrawNumber: reg.luckyDrawNumber || assignedRunningNumber,
+      },
     });
 
     await logAudit({
@@ -105,6 +125,7 @@ checkinsRouter.post(
         fullName: reg.fullName,
         checkinPointId,
         pointName: point.name,
+        runningNumber: assignedRunningNumber,
         method,
       },
     });
@@ -136,7 +157,64 @@ checkinsRouter.post(
       percentage: totalReg > 0 ? Math.round((checkedInCount / totalReg) * 100) : 0,
     });
 
-    res.status(201).json({ success: true, data: { checkin, registration: reg } });
+    res.status(201).json({ success: true, data: { checkin, registration: updatedReg } });
+  })
+);
+
+// POST /api/checkin/points — Create Checkin Point
+checkinsRouter.post(
+  "/points",
+  asyncHandler(async (req, res) => {
+    const { eventId, name, location, prefix = "A", numberPadding = 5, sortOrder = 0 } = req.body;
+    if (!eventId || !name) throw createError(400, "eventId and name are required");
+
+    const point = await prisma.checkinPoint.create({
+      data: {
+        eventId,
+        name,
+        location: location || null,
+        prefix: prefix.toUpperCase().trim(),
+        numberPadding: Number(numberPadding) || 5,
+        sortOrder: Number(sortOrder) || 0,
+        isActive: true,
+      },
+    });
+
+    res.status(201).json({ success: true, data: point });
+  })
+);
+
+// PUT /api/checkin/points/:id — Update Checkin Point
+checkinsRouter.put(
+  "/points/:id",
+  asyncHandler(async (req, res) => {
+    const { name, location, prefix, numberPadding, isActive, sortOrder } = req.body;
+    const pointId = String(req.params.id);
+
+    const dataToUpdate: Record<string, unknown> = {};
+    if (name !== undefined) dataToUpdate.name = name;
+    if (location !== undefined) dataToUpdate.location = location;
+    if (prefix !== undefined) dataToUpdate.prefix = String(prefix).toUpperCase().trim();
+    if (numberPadding !== undefined) dataToUpdate.numberPadding = Number(numberPadding);
+    if (isActive !== undefined) dataToUpdate.isActive = Boolean(isActive);
+    if (sortOrder !== undefined) dataToUpdate.sortOrder = Number(sortOrder);
+
+    const point = await prisma.checkinPoint.update({
+      where: { id: pointId },
+      data: dataToUpdate,
+    });
+
+    res.json({ success: true, data: point });
+  })
+);
+
+// DELETE /api/checkin/points/:id — Delete Checkin Point
+checkinsRouter.delete(
+  "/points/:id",
+  asyncHandler(async (req, res) => {
+    const pointId = String(req.params.id);
+    await prisma.checkinPoint.delete({ where: { id: pointId } });
+    res.json({ success: true, message: "Checkin point deleted" });
   })
 );
 
