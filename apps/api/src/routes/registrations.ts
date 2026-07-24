@@ -246,15 +246,34 @@ registrationsRouter.post(
       existingRecord?: any;
     }> = [];
 
+    // Validate that EVERY row in the file has BOTH fullName AND company provided
+    const invalidRows: Array<{ row: number; reason: string }> = [];
+    for (let i = 0; i < result.data.length; i++) {
+      const row = result.data[i]!;
+      const rowNum = i + 2;
+      const fn = row.fullName ? String(row.fullName).trim() : "";
+      const comp = row.company ? String(row.company).trim() : "";
+
+      if (!fn || fn === "-") {
+        invalidRows.push({ row: rowNum, reason: "ขาดข้อมูลชื่อ-นามสกุล" });
+      } else if (!comp || comp === "-") {
+        invalidRows.push({ row: rowNum, reason: "ขาดข้อมูลบริษัท/หน่วยงาน" });
+      }
+    }
+
+    if (invalidRows.length > 0) {
+      const details = invalidRows.slice(0, 10).map((r) => `แถวที่ ${r.row} (${r.reason})`).join(", ");
+      const extraCount = invalidRows.length > 10 ? ` และอีก ${invalidRows.length - 10} รายการ` : "";
+      throw createError(
+        400,
+        `ปฏิเสธการนำเข้าทั้งไฟล์ ❌: ข้อมูลต้องมีทั้ง 'ชื่อ-นามสกุล' และ 'บริษัท' ครบถ้วนทุกแถว (พบข้อผิดพลาด ${invalidRows.length} รายการ: ${details}${extraCount})`
+      );
+    }
+
     const errors = [...result.errors];
 
     for (let i = 0; i < result.data.length; i++) {
       const row = result.data[i]!;
-      if (!row.fullName) {
-        errors.push({ row: i + 2, field: "fullName", message: "Name is required" });
-        continue;
-      }
-
       const fullName = String(row.fullName).trim();
       const email = row.email && String(row.email).trim() !== "-" ? String(row.email).trim() : null;
       
@@ -543,6 +562,42 @@ registrationsRouter.post(
     });
 
     res.status(201).json({ success: true, data: registration });
+  })
+);
+
+// PUT /api/registrations/:id — Update single registration
+registrationsRouter.put(
+  "/:id",
+  asyncHandler(async (req, res) => {
+    const id = String(req.params.id);
+    const { fullName, company, phone, email, department, employeeType, status, ticketNumber, luckyDrawNumber } = req.body;
+
+    const existing = await prisma.registration.findUnique({ where: { id } });
+    if (!existing) throw createError(404, "ไม่พบข้อมูลผู้ลงทะเบียน");
+
+    const updated = await prisma.registration.update({
+      where: { id },
+      data: {
+        ...(fullName !== undefined && { fullName: String(fullName).trim() }),
+        ...(company !== undefined && { company: company ? String(company).trim() : null }),
+        ...(phone !== undefined && { phone: phone ? String(phone).trim() : null }),
+        ...(email !== undefined && { email: email ? String(email).trim() : null }),
+        ...(department !== undefined && { department: department ? String(department).trim() : null }),
+        ...(employeeType !== undefined && { employeeType: employeeType ? String(employeeType).trim() : null }),
+        ...(status !== undefined && { status }),
+        ...(ticketNumber !== undefined && { ticketNumber: ticketNumber ? String(ticketNumber).trim() : null }),
+        ...(luckyDrawNumber !== undefined && { luckyDrawNumber: luckyDrawNumber ? String(luckyDrawNumber).trim() : null }),
+      },
+    });
+
+    await logAudit({
+      entityType: "Registration",
+      entityId: id,
+      action: "UPDATE",
+      newData: { fullName, company, phone, status },
+    });
+
+    res.json({ success: true, data: updated });
   })
 );
 

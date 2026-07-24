@@ -66,6 +66,74 @@ export default function AdminPage() {
     setAlertModal({ show: true, type, title, message });
   }
 
+  // Registration Filter & Edit Modal State
+  const [regSearchQuery, setRegSearchQuery] = useState("");
+  const [isEditRegModalOpen, setIsEditRegModalOpen] = useState(false);
+  const [editingReg, setEditingReg] = useState<{
+    id: string;
+    fullName: string;
+    company: string;
+    phone: string;
+    email: string;
+    department: string;
+    employeeType: string;
+    status: string;
+    ticketNumber: string;
+  }>({
+    id: "",
+    fullName: "",
+    company: "",
+    phone: "",
+    email: "",
+    department: "",
+    employeeType: "",
+    status: "APPROVED",
+    ticketNumber: "",
+  });
+
+  function openEditReg(reg: any) {
+    setEditingReg({
+      id: reg.id,
+      fullName: reg.fullName || "",
+      company: reg.company || "",
+      phone: reg.phone || "",
+      email: reg.email || "",
+      department: reg.department || "",
+      employeeType: reg.employeeType || "",
+      status: reg.status || "APPROVED",
+      ticketNumber: reg.ticketNumber || reg.luckyDrawNumber || "",
+    });
+    setIsEditRegModalOpen(true);
+  }
+
+  async function handleSaveRegEdit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingReg.fullName.trim() || !editingReg.company.trim()) {
+      showAlert("กรุณาระบุ 'ชื่อ-นามสกุล' และ 'บริษัท/หน่วยงาน' ให้ครบถ้วน", "warning");
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/api/registrations/${editingReg.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+        body: JSON.stringify(editingReg),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setRegistrations(registrations.map((r) => (r.id === editingReg.id ? { ...r, ...data.data } : r)));
+        setIsEditRegModalOpen(false);
+        showAlert("อัปเดตข้อมูลผู้ลงทะเบียนสำเร็จ 🎉", "success");
+      } else {
+        showAlert(`เกิดข้อผิดพลาด: ${data.error}`, "error");
+      }
+    } catch (err: any) {
+      showAlert(`เกิดข้อผิดพลาด: ${err.message}`, "error");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   // Prize Management State
   const [duplicateModal, setDuplicateModal] = useState<{
     show: boolean;
@@ -989,7 +1057,19 @@ export default function AdminPage() {
             <div className="admin-header">
               <div>
                 <h1 className="admin-header__title">ผู้ลงทะเบียน</h1>
-                <p className="admin-header__subtitle">{registrations.length} คน</p>
+                <p className="admin-header__subtitle">
+                  {registrations.length} คน {regSearchQuery.trim() && `(ผลการค้นหา ${registrations.filter((reg) => {
+                    const q = regSearchQuery.toLowerCase().trim();
+                    return (
+                      (reg.fullName && reg.fullName.toLowerCase().includes(q)) ||
+                      (reg.company && reg.company.toLowerCase().includes(q)) ||
+                      (reg.qrCode && reg.qrCode.toLowerCase().includes(q)) ||
+                      (reg.phone && reg.phone.toLowerCase().includes(q)) ||
+                      (reg.ticketNumber && reg.ticketNumber.toLowerCase().includes(q)) ||
+                      (reg.luckyDrawNumber && reg.luckyDrawNumber.toLowerCase().includes(q))
+                    );
+                  }).length} คน)`}
+                </p>
               </div>
               <div className="flex gap-3">
                 <button className="btn btn--outline" onClick={handleDownloadTemplate}>
@@ -1007,6 +1087,39 @@ export default function AdminPage() {
                   />
                 </label>
                 <button className="btn btn--secondary" onClick={handleExport}>📤 Export Excel</button>
+              </div>
+            </div>
+
+            {/* Search Box */}
+            <div style={{ marginBottom: "var(--space-4)", display: "flex", gap: "var(--space-3)", alignItems: "center" }}>
+              <div style={{ position: "relative", flex: 1 }}>
+                <input
+                  type="text"
+                  className="input"
+                  placeholder="🔍 ค้นหา ชื่อ-นามสกุล, บริษัท, QR Code, เบอร์โทร, เลขเช็กอิน..."
+                  value={regSearchQuery}
+                  onChange={(e) => setRegSearchQuery(e.target.value)}
+                  style={{ paddingLeft: "2.5rem", width: "100%", height: "42px" }}
+                />
+                {regSearchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setRegSearchQuery("")}
+                    style={{
+                      position: "absolute",
+                      right: "0.75rem",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      border: "none",
+                      background: "transparent",
+                      color: "var(--text-muted)",
+                      cursor: "pointer",
+                      fontSize: "1rem",
+                    }}
+                  >
+                    ✕
+                  </button>
+                )}
               </div>
             </div>
 
@@ -1044,50 +1157,103 @@ export default function AdminPage() {
                   <thead>
                     <tr>
                       <th>ชื่อ-นามสกุล</th>
-                      <th>อีเมล</th>
-                      <th>เบอร์โทร</th>
                       <th>บริษัท</th>
-                      <th>แผนก</th>
-                      <th>ประเภท</th>
-                      <th>สถานะ</th>
                       <th>QR Code</th>
+                      <th>เบอร์โทร</th>
+                      <th>สถานะ</th>
+                      <th>เลขเช็กอิน</th>
+                      <th style={{ textAlign: "right" }}>จัดการ</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {registrations.map((reg) => (
-                      <tr key={reg.id}>
-                        <td style={{ fontWeight: 600, color: "var(--text-primary)" }}>{reg.fullName}</td>
-                        <td>{reg.email || "-"}</td>
-                        <td>{reg.phone || "-"}</td>
-                        <td>{reg.company || "-"}</td>
-                        <td>{reg.department || "-"}</td>
-                        <td>{reg.employeeType || "-"}</td>
-                        <td>
-                          <span
-                            className={`badge badge--${
-                              reg.status === "CHECKED_IN"
-                                ? "success"
+                    {registrations
+                      .filter((reg) => {
+                        if (!regSearchQuery.trim()) return true;
+                        const q = regSearchQuery.toLowerCase().trim();
+                        return (
+                          (reg.fullName && reg.fullName.toLowerCase().includes(q)) ||
+                          (reg.company && reg.company.toLowerCase().includes(q)) ||
+                          (reg.qrCode && reg.qrCode.toLowerCase().includes(q)) ||
+                          (reg.phone && reg.phone.toLowerCase().includes(q)) ||
+                          (reg.ticketNumber && reg.ticketNumber.toLowerCase().includes(q)) ||
+                          (reg.luckyDrawNumber && reg.luckyDrawNumber.toLowerCase().includes(q))
+                        );
+                      })
+                      .map((reg) => (
+                        <tr key={reg.id}>
+                          <td style={{ fontWeight: 600, color: "var(--text-primary)" }}>{reg.fullName}</td>
+                          <td>{reg.company || "-"}</td>
+                          <td style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-xs)", color: "var(--primary)" }}>{reg.qrCode}</td>
+                          <td>{reg.phone || "-"}</td>
+                          <td>
+                            <span
+                              className={`badge badge--${
+                                reg.status === "CHECKED_IN"
+                                  ? "success"
+                                  : reg.status === "APPROVED"
+                                  ? "primary"
+                                  : reg.status === "CANCELLED"
+                                  ? "error"
+                                  : "warning"
+                              }`}
+                            >
+                              {reg.status === "CHECKED_IN"
+                                ? "✓ เช็กอินแล้ว"
                                 : reg.status === "APPROVED"
-                                ? "primary"
+                                ? "อนุมัติ"
                                 : reg.status === "CANCELLED"
-                                ? "error"
-                                : "warning"
-                            }`}
-                          >
-                            {reg.status === "CHECKED_IN"
-                              ? "✓ เช็กอินแล้ว"
-                              : reg.status === "APPROVED"
-                              ? "อนุมัติ"
-                              : reg.status === "CANCELLED"
-                              ? "ยกเลิก"
-                              : reg.status === "PENDING_APPROVAL"
-                              ? "รอการอนุมัติ"
-                              : "ลงทะเบียน"}
-                          </span>
-                        </td>
-                        <td style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-xs)" }}>{reg.qrCode}</td>
-                      </tr>
-                    ))}
+                                ? "ยกเลิก"
+                                : reg.status === "PENDING_APPROVAL"
+                                ? "รอการอนุมัติ"
+                                : "ลงทะเบียน"}
+                            </span>
+                          </td>
+                          <td style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
+                            {reg.ticketNumber || reg.luckyDrawNumber || "-"}
+                          </td>
+                          <td style={{ textAlign: "right" }}>
+                            <div className="flex gap-2 justify-end">
+                              <button
+                                className="btn btn--secondary btn--sm"
+                                style={{ padding: "0.25rem 0.5rem", fontSize: "0.8rem", display: "inline-flex", alignItems: "center", gap: "0.2rem" }}
+                                onClick={() => openEditReg(reg)}
+                                title="แก้ไขข้อมูลผู้ลงทะเบียน"
+                              >
+                                ✏️ แก้ไข
+                              </button>
+                              <button
+                                className="btn btn--danger btn--sm"
+                                style={{ padding: "0.25rem 0.5rem", fontSize: "0.8rem" }}
+                                onClick={async () => {
+                                  if (confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบ ${reg.fullName}?`)) {
+                                    setLoading(true);
+                                    try {
+                                      const res = await fetch(`${API_URL}/api/registrations/${reg.id}`, {
+                                        method: "DELETE",
+                                        headers: getAuthHeaders(),
+                                      });
+                                      const data = await res.json();
+                                      if (data.success) {
+                                        setRegistrations(registrations.filter((r) => r.id !== reg.id));
+                                        showAlert("ลบข้อมูลผู้ลงทะเบียนสำเร็จ", "info");
+                                      } else {
+                                        showAlert(`เกิดข้อผิดพลาด: ${data.error}`, "error");
+                                      }
+                                    } catch (err: any) {
+                                      showAlert(`เกิดข้อผิดพลาด: ${err.message}`, "error");
+                                    } finally {
+                                      setLoading(false);
+                                    }
+                                  }
+                                }}
+                                title="ลบผู้ลงทะเบียน"
+                              >
+                                🗑️
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
                   </tbody>
                 </table>
               </div>
@@ -2046,6 +2212,91 @@ export default function AdminPage() {
               />
               <span style={{ fontSize: "var(--text-sm)", fontWeight: 600 }}>🟢 เปิดใช้งานทางเข้างานนี้</span>
             </label>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Edit Registration Modal */}
+      <Modal
+        isOpen={isEditRegModalOpen}
+        onClose={() => setIsEditRegModalOpen(false)}
+        title="✏️ แก้ไขข้อมูลผู้ลงทะเบียน"
+        footer={
+          <div style={{ display: "flex", gap: "var(--space-3)", justifyContent: "flex-end" }}>
+            <Button variant="ghost" onClick={() => setIsEditRegModalOpen(false)}>ยกเลิก</Button>
+            <Button variant="primary" type="submit" form="edit-reg-form" disabled={loading}>
+              {loading ? "กำลังบันทึก..." : "บันทึกการแก้ไข"}
+            </Button>
+          </div>
+        }
+      >
+        <form id="edit-reg-form" onSubmit={handleSaveRegEdit} style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+          <Input
+            label="ชื่อ-นามสกุล *"
+            required
+            value={editingReg.fullName}
+            onChange={(e) => setEditingReg({ ...editingReg, fullName: e.target.value })}
+            placeholder="เช่น สมชาย ใจดี"
+          />
+          <Input
+            label="บริษัท/หน่วยงาน/องค์กร *"
+            required
+            value={editingReg.company}
+            onChange={(e) => setEditingReg({ ...editingReg, company: e.target.value })}
+            placeholder="เช่น บริษัท เออบาน่า จำกัด"
+          />
+          <div className="grid grid-2 gap-4">
+            <Input
+              label="เบอร์โทรศัพท์"
+              value={editingReg.phone}
+              onChange={(e) => setEditingReg({ ...editingReg, phone: e.target.value })}
+              placeholder="เช่น 0812345678"
+            />
+            <Input
+              label="อีเมล"
+              value={editingReg.email}
+              onChange={(e) => setEditingReg({ ...editingReg, email: e.target.value })}
+              placeholder="เช่น example@email.com"
+            />
+          </div>
+          <div className="grid grid-2 gap-4">
+            <Input
+              label="แผนก/ฝ่าย"
+              value={editingReg.department}
+              onChange={(e) => setEditingReg({ ...editingReg, department: e.target.value })}
+              placeholder="เช่น ฝ่ายการตลาด"
+            />
+            <Input
+              label="ประเภทพนักงาน / สถานะบุคคล"
+              value={editingReg.employeeType}
+              onChange={(e) => setEditingReg({ ...editingReg, employeeType: e.target.value })}
+              placeholder="เช่น พนักงานประจำ, VIP, ลูกค้า"
+            />
+          </div>
+          <div className="grid grid-2 gap-4">
+            <div className="form-group">
+              <label style={{ fontSize: "var(--text-sm)", fontWeight: 600, marginBottom: "var(--space-1)", display: "block" }}>
+                สถานะการลงทะเบียน
+              </label>
+              <select
+                className="input"
+                value={editingReg.status}
+                onChange={(e) => setEditingReg({ ...editingReg, status: e.target.value })}
+                style={{ width: "100%", height: "40px" }}
+              >
+                <option value="APPROVED">🟢 อนุมัติ (APPROVED)</option>
+                <option value="CHECKED_IN">✅ เช็กอินแล้ว (CHECKED_IN)</option>
+                <option value="REGISTERED">📝 ลงทะเบียนแล้ว (REGISTERED)</option>
+                <option value="PENDING_APPROVAL">⏳ รอการอนุมัติ (PENDING_APPROVAL)</option>
+                <option value="CANCELLED">🔴 ยกเลิก (CANCELLED)</option>
+              </select>
+            </div>
+            <Input
+              label="Running Number / เลขเช็กอิน"
+              value={editingReg.ticketNumber}
+              onChange={(e) => setEditingReg({ ...editingReg, ticketNumber: e.target.value })}
+              placeholder="เช่น A00001"
+            />
           </div>
         </form>
       </Modal>
