@@ -68,6 +68,18 @@ export default function AdminPage() {
 
   // Registration Filter & Edit Modal State
   const [regSearchQuery, setRegSearchQuery] = useState("");
+  const [regSortField, setRegSortField] = useState<string>("createdAt");
+  const [regSortDirection, setRegSortDirection] = useState<"asc" | "desc">("desc");
+
+  function handleRegSort(field: string) {
+    if (regSortField === field) {
+      setRegSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setRegSortField(field);
+      setRegSortDirection("asc");
+    }
+  }
+
   const [isEditRegModalOpen, setIsEditRegModalOpen] = useState(false);
   const [editingReg, setEditingReg] = useState<{
     id: string;
@@ -1156,12 +1168,31 @@ export default function AdminPage() {
                 <table className="table">
                   <thead>
                     <tr>
-                      <th>ชื่อ-นามสกุล</th>
-                      <th>บริษัท</th>
-                      <th>QR Code</th>
-                      <th>เบอร์โทร</th>
-                      <th>สถานะ</th>
-                      <th>เลขเช็กอิน</th>
+                      {[
+                        { label: "ชื่อ-นามสกุล", field: "fullName" },
+                        { label: "บริษัท", field: "company" },
+                        { label: "QR Code", field: "qrCode" },
+                        { label: "เบอร์โทร", field: "phone" },
+                        { label: "สถานะ", field: "status" },
+                        { label: "เลขเช็กอิน", field: "ticketNumber" },
+                      ].map((col) => {
+                        const isActive = regSortField === col.field;
+                        return (
+                          <th
+                            key={col.field}
+                            onClick={() => handleRegSort(col.field)}
+                            style={{ cursor: "pointer", userSelect: "none", whiteSpace: "nowrap" }}
+                            title={`คลิกเพื่อเรียงข้อมูลตาม ${col.label}`}
+                          >
+                            <div style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem" }}>
+                              <span>{col.label}</span>
+                              <span style={{ fontSize: "0.75rem", color: isActive ? "var(--primary)" : "var(--text-muted)", opacity: isActive ? 1 : 0.3 }}>
+                                {isActive ? (regSortDirection === "asc" ? "▲" : "▼") : "↕"}
+                              </span>
+                            </div>
+                          </th>
+                        );
+                      })}
                       <th style={{ textAlign: "right" }}>จัดการ</th>
                     </tr>
                   </thead>
@@ -1178,6 +1209,43 @@ export default function AdminPage() {
                           (reg.ticketNumber && reg.ticketNumber.toLowerCase().includes(q)) ||
                           (reg.luckyDrawNumber && reg.luckyDrawNumber.toLowerCase().includes(q))
                         );
+                      })
+                      .sort((a, b) => {
+                        let valA = "";
+                        let valB = "";
+
+                        switch (regSortField) {
+                          case "fullName":
+                            valA = a.fullName || "";
+                            valB = b.fullName || "";
+                            break;
+                          case "company":
+                            valA = a.company || "";
+                            valB = b.company || "";
+                            break;
+                          case "qrCode":
+                            valA = a.qrCode || "";
+                            valB = b.qrCode || "";
+                            break;
+                          case "phone":
+                            valA = a.phone || "";
+                            valB = b.phone || "";
+                            break;
+                          case "status":
+                            valA = a.status || "";
+                            valB = b.status || "";
+                            break;
+                          case "ticketNumber":
+                            valA = a.ticketNumber || a.luckyDrawNumber || "";
+                            valB = b.ticketNumber || b.luckyDrawNumber || "";
+                            break;
+                          default:
+                            valA = a.createdAt || "";
+                            valB = b.createdAt || "";
+                        }
+
+                        const cmp = valA.localeCompare(valB, "th", { numeric: true, sensitivity: "base" });
+                        return regSortDirection === "asc" ? cmp : -cmp;
                       })
                       .map((reg) => (
                         <tr key={reg.id}>
