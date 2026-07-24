@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { prisma } from "../utils/prisma";
-import { asyncHandler } from "../middleware/errorHandler";
+import { asyncHandler, createError } from "../middleware/errorHandler";
 import { logAudit } from "../middleware/audit";
 
 export const eventsRouter: Router = Router();
@@ -127,13 +127,25 @@ eventsRouter.put(
   })
 );
 
-// DELETE /api/events/:id — Delete event
+// DELETE /api/events/:id — Delete event & all associated registrations, checkins, prizes, winners
 eventsRouter.delete(
   "/:id",
   asyncHandler(async (req, res) => {
     const id = String(req.params.id);
     const old = await prisma.event.findUnique({ where: { id } });
-    await prisma.event.delete({ where: { id } });
+    if (!old) throw createError(404, "ไม่พบข้อมูลงาน Event");
+
+    // Clean cascade delete of all child objects and event
+    await prisma.$transaction([
+      prisma.checkin.deleteMany({ where: { registration: { eventId: id } } }),
+      prisma.drawWinner.deleteMany({ where: { prize: { eventId: id } } }),
+      prisma.drawSession.deleteMany({ where: { eventId: id } }),
+      prisma.groupMember.deleteMany({ where: { registration: { eventId: id } } }),
+      prisma.registration.deleteMany({ where: { eventId: id } }),
+      prisma.checkinPoint.deleteMany({ where: { eventId: id } }),
+      prisma.prize.deleteMany({ where: { eventId: id } }),
+      prisma.event.delete({ where: { id } }),
+    ]);
 
     await logAudit({
       entityType: "Event",
@@ -143,7 +155,7 @@ eventsRouter.delete(
       performedBy: req.auditContext?.performedBy,
     });
 
-    res.json({ success: true, message: "Event deleted" });
+    res.json({ success: true, message: "Event and all related registrations deleted" });
   })
 );
 

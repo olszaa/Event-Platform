@@ -80,6 +80,68 @@ export default function AdminPage() {
     }
   }
 
+  // Delete Event Confirmation State
+  const [deleteEventModal, setDeleteEventModal] = useState<{
+    show: boolean;
+    event: any | null;
+    confirmCode: string;
+    inputCode: string;
+  }>({
+    show: false,
+    event: null,
+    confirmCode: "",
+    inputCode: "",
+  });
+
+  function openDeleteEventModal(ev: any) {
+    const randomCode = String(Math.floor(1000 + Math.random() * 9000));
+    setDeleteEventModal({
+      show: true,
+      event: ev,
+      confirmCode: randomCode,
+      inputCode: "",
+    });
+  }
+
+  async function handleConfirmDeleteEvent() {
+    if (!deleteEventModal.event) return;
+    if (deleteEventModal.inputCode.trim() !== deleteEventModal.confirmCode) {
+      showAlert("รหัสยืนยันไม่ถูกต้อง กรุณากรอกรหัสตามที่แสดงบนหน้าจอ", "warning");
+      return;
+    }
+
+    const eventToDeleteId = deleteEventModal.event.id;
+    const eventName = deleteEventModal.event.name;
+    setLoading(true);
+
+    try {
+      const res = await fetch(`${API_URL}/api/events/${eventToDeleteId}`, {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setEvents((prev) => prev.filter((e) => e.id !== eventToDeleteId));
+        if (selectedEventId === eventToDeleteId) {
+          const remaining = events.filter((e) => e.id !== eventToDeleteId);
+          if (remaining.length > 0) {
+            setSelectedEventId(remaining[0].id);
+          } else {
+            setSelectedEventId("");
+          }
+        }
+        setDeleteEventModal({ show: false, event: null, confirmCode: "", inputCode: "" });
+        showAlert(`ลบงาน Event '${eventName}' และข้อมูลผู้ลงทะเบียนทั้งหมดสำเร็จแล้ว 🗑️`, "success", "ลบงาน Event สำเร็จ");
+      } else {
+        showAlert(`เกิดข้อผิดพลาด: ${data.error}`, "error");
+      }
+    } catch (err: any) {
+      showAlert(`เกิดข้อผิดพลาด: ${err.message}`, "error");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   const [isEditRegModalOpen, setIsEditRegModalOpen] = useState(false);
   const [editingReg, setEditingReg] = useState<{
     id: string;
@@ -1034,6 +1096,14 @@ export default function AdminPage() {
                         onClick={() => openEditEvent(ev)}
                       >
                         ✏️ แก้ไข
+                      </button>
+                      <button
+                        className="btn btn--danger"
+                        style={{ padding: "0.25rem 0.5rem", fontSize: "0.75rem", background: "rgba(239,68,68,0.15)", color: "#EF4444", border: "1px solid rgba(239,68,68,0.3)" }}
+                        onClick={() => openDeleteEventModal(ev)}
+                        title="ลบงาน Event พร้อมผู้ลงทะเบียนทั้งหมด"
+                      >
+                        🗑️ ลบงาน
                       </button>
                       <select
                         className={`badge badge--${ev.status === "ACTIVE" ? "success" : ev.status === "PUBLISHED" ? "primary" : "neutral"}`}
@@ -2490,6 +2560,74 @@ export default function AdminPage() {
                 }}
               >
                 ⚡ ยืนยันทั้งหมด ({duplicateModal.duplicates.length})
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Delete Event Confirmation with Verification Code */}
+      {deleteEventModal.show && deleteEventModal.event && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", backdropFilter: "blur(6px)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
+          <div className="glass-card" style={{ maxWidth: "520px", width: "100%", background: "var(--bg-primary)", padding: "1.75rem", borderRadius: "16px", border: "1px solid rgba(239,68,68,0.4)", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.7)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+              <h2 style={{ fontSize: "1.25rem", fontWeight: 700, color: "#EF4444", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                🗑️ ยืนยันการลบงาน Event
+              </h2>
+              <button
+                className="btn btn--outline"
+                style={{ padding: "0.2rem 0.5rem", fontSize: "0.8rem" }}
+                onClick={() => setDeleteEventModal((prev) => ({ ...prev, show: false }))}
+              >
+                ✕ ปิด
+              </button>
+            </div>
+
+            <div style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "12px", padding: "1rem", marginBottom: "1.25rem" }}>
+              <h3 style={{ fontSize: "1.05rem", fontWeight: 700, color: "var(--text-primary)", marginBottom: "0.5rem" }}>
+                📌 {deleteEventModal.event.name}
+              </h3>
+              <p style={{ fontSize: "0.875rem", color: "#FCA5A5", lineHeight: "1.5" }}>
+                ⚠️ <b>คำเตือนสำคัญ:</b> การลบงาน Event นี้ จะทำการลบผู้ลงทะเบียนทั้งหมด <b>({deleteEventModal.event._count?.registrations || 0} คน)</b>, ข้อมูลการเช็กอิน, รางวัล, และข้อมูลทั้งหมดที่เกี่ยวข้องอย่างถาวร <b>ไม่สามารถกู้คืนได้!</b>
+              </p>
+            </div>
+
+            <div style={{ marginBottom: "1.5rem" }}>
+              <label style={{ fontSize: "0.9rem", fontWeight: 600, display: "block", marginBottom: "0.5rem", color: "var(--text-primary)" }}>
+                กรุณากรอกรหัสยืนยันด้านล่างเพื่อทำการลบ:
+              </label>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.75rem" }}>
+                <span style={{ fontSize: "1.4rem", fontWeight: 800, fontFamily: "var(--font-mono)", letterSpacing: "4px", background: "var(--bg-tertiary)", padding: "0.4rem 1rem", borderRadius: "8px", border: "1px solid var(--border-color)", color: "#F59E0B" }}>
+                  {deleteEventModal.confirmCode}
+                </span>
+                <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
+                  (พิมพ์รหัส 4 หลักให้ถูกต้อง)
+                </span>
+              </div>
+              <input
+                type="text"
+                className="input"
+                placeholder="พิมพ์รหัสยืนยัน 4 หลักที่นี่..."
+                value={deleteEventModal.inputCode}
+                onChange={(e) => setDeleteEventModal((prev) => ({ ...prev, inputCode: e.target.value }))}
+                style={{ width: "100%", height: "44px", fontSize: "1.1rem", fontFamily: "var(--font-mono)", textAlign: "center", letterSpacing: "2px", border: deleteEventModal.inputCode === deleteEventModal.confirmCode ? "2px solid #10B981" : "1px solid var(--border-color)" }}
+              />
+            </div>
+
+            <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end" }}>
+              <button
+                className="btn btn--outline"
+                onClick={() => setDeleteEventModal((prev) => ({ ...prev, show: false }))}
+              >
+                ❌ ยกเลิก
+              </button>
+              <button
+                className="btn btn--danger"
+                disabled={deleteEventModal.inputCode.trim() !== deleteEventModal.confirmCode || loading}
+                onClick={handleConfirmDeleteEvent}
+                style={{ background: deleteEventModal.inputCode.trim() === deleteEventModal.confirmCode ? "linear-gradient(135deg, #EF4444, #DC2626)" : "#6B7280", cursor: deleteEventModal.inputCode.trim() === deleteEventModal.confirmCode ? "pointer" : "not-allowed" }}
+              >
+                {loading ? "กำลังลบงาน..." : "🔴 ยืนยันลบงานและผู้ลงทะเบียนทั้งหมด"}
               </button>
             </div>
           </div>
