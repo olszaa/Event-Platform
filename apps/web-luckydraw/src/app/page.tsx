@@ -987,6 +987,8 @@ export default function LuckyDrawPage() {
             ))}
           </div>
         )}
+      </div>
+
       {/* Custom Alert Popup Modal */}
       {alertModal.show && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", backdropFilter: "blur(8px)", zIndex: 10000, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>

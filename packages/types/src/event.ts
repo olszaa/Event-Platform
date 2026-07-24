@@ -19,6 +19,7 @@ export interface EventSettings {
   isPinned?: boolean;
   enableRegisterWhenActive?: boolean;
   enableCheckinWhenPublic?: boolean;
+  registerPlatform?: "BOTH" | "GAS" | "PLATFORM" | string;
 }
 
 export interface CustomField {
